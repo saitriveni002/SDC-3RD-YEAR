@@ -149,3 +149,57 @@ RUN rm -rf /usr/local/tomcat/webapps/*
 COPY target/*.war /usr/local/tomcat/webapps/ROOT.war
 EXPOSE 8080
 CMD ["catalina.sh", "run"]
+If you mean **how to run a Docker Hub image**, the basic flow is:
+
+```
+# 1. Install Docker
+# Then verify
+docker --version
+
+# 2. Login to Docker Hub
+docker login
+
+# 3. Pull an image
+docker pull nginx
+
+# 4. Run the container
+docker run -d -p 8080:80 --name my-nginx nginx
+
+# 5. Check running containers
+docker ps
+
+# 6. Stop it
+docker stop my-nginx
+
+# 7. Remove it
+docker rm my-nginx
+```
+
+ ### If you have your own image on Docker Hub
+
+ For an image like `username/myapp:latest`:
+
+```
+docker login
+docker pull username/myapp:latest
+docker run -d -p 8080:8080 --name myapp username/myapp:latest
+```
+
+ ### Flow for pushing your own image
+
+```
+# Build
+docker build -t username/myapp:latest .
+
+# Login
+docker login
+
+# Push to Docker Hub
+docker push username/myapp:latest
+```
+
+ So the overall flow is:
+
+ **Dockerfile → `docker build` → Docker image → `docker push` → Docker Hub → `docker pull` → `docker run`**
+
+ If you tell me whether you're trying to **run an existing Docker Hub image** or **create/push your own image**, I can give you the exact step-by-step flow.
