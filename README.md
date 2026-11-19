@@ -1,3 +1,6 @@
+
+
+
 # SDC-3RD-YEAR
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -203,3 +206,200 @@ docker push username/myapp:latest
  **Dockerfile → `docker build` → Docker image → `docker push` → Docker Hub → `docker pull` → `docker run`**
 
  If you tell me whether you're trying to **run an existing Docker Hub image** or **create/push your own image**, I can give you the exact step-by-step flow.
+nginx-tomcat/
+│
+├── docker-compose.yml
+│
+├── nginx/
+│   └── default.conf
+│
+└── webapp/
+    └── index.html
+server {
+
+    listen 80;
+
+    location / {
+
+        proxy_pass http://tomcat:8080;
+
+        proxy_set_header Host $host;
+
+        proxy_set_header X-Real-IP $remote_addr;
+
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+
+    }
+
+}
+services:
+
+  db:
+    image: mysql:8.0
+    container_name: mysql-db
+    restart: always
+
+    environment:
+      MYSQL_ROOT_PASSWORD: root123
+      MYSQL_DATABASE: wordpress
+      MYSQL_USER: wpuser
+      MYSQL_PASSWORD: wp123
+
+    volumes:
+      - db-data:/var/lib/mysql
+
+  wordpress:
+    image: wordpress:latest
+    container_name: wordpress-app
+    restart: always
+
+    ports:
+      - "8080:80"
+
+    environment:
+      WORDPRESS_DB_HOST: db:3306
+      WORDPRESS_DB_USER: wpuser
+      WORDPRESS_DB_PASSWORD: wp123
+      WORDPRESS_DB_NAME: wordpress
+
+    depends_on:
+      - db
+
+    volumes:
+      - wp-data:/var/www/html
+
+volumes:
+  db-data:
+  wp-data:
+////
+services:
+
+  tomcat:
+    image: tomcat:9.0
+    container_name: tomcat-server
+    restart: always
+
+    volumes:
+      - ./webapp:/usr/local/tomcat/webapps/ROOT
+
+    networks:
+      - app-network
+
+  nginx:
+    image: nginx:latest
+    container_name: nginx-server
+    restart: always
+
+    ports:
+      - "8081:80"
+
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+
+    depends_on:
+      - tomcat
+
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
+| Plugin | Purpose |
+|---|---|
+| Git | Connects Jenkins to GitHub repositories |
+| Pipeline | Creates pipeline projects |
+| Git Client | Supports Git operations |
+| Maven Integration | Provides Maven-related integration |
+
+
+node {
+
+    try {
+
+        stage('Checkout') {
+
+            echo 'Fetching source code from GitHub'
+
+            git branch: 'main',
+                url: 'GITHUB_REPOSITORY_URL'
+
+        }
+
+        stage('Build') {
+
+            echo 'Building the Java application'
+
+            bat 'mvn clean compile'
+
+        }
+
+        stage('Test') {
+
+            echo 'Running test cases'
+
+            bat 'mvn test'
+
+        }
+
+        stage('Package') {
+
+            echo 'Packaging the application'
+
+            bat 'mvn package'
+
+        }
+
+        stage('Success') {
+
+            echo 'BUILD SUCCESSFUL'
+
+        }
+
+    }
+
+    catch (Exception e) {
+
+        echo 'BUILD FAILED'
+
+        throw e
+
+    }
+
+}
+
+pipeline {
+    agent any
+
+    tools {
+        maven 'maven-home'
+    }
+
+    stages {
+        stage('Git Repo and Clean') {
+            steps {
+                bat 'rmdir /s /q sample-maven-java-project'
+                bat 'git clone https://github.com/USERNAME/sample-maven-java-project.git'
+                bat 'mvn clean -f sample-maven-java-project/pom.xml'
+            }
+        }
+
+        stage('Install') {
+            steps {
+                bat 'mvn install -f sample-maven-java-project/pom.xml'
+            }
+        }
+
+        stage('Test') {
+            steps {
+                bat 'mvn test -f sample-maven-java-project/pom.xml'
+            }
+        }
+
+        stage('Package') {
+            steps {
+                bat 'mvn package -f sample-maven-java-project/pom.xml'
+            }
+        }
+    }
+}
