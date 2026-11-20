@@ -1,4 +1,300 @@
-t **Docker Compose practical – WordPress and MySQL **.
+### 1. Create project folder
+
+```bash
+mkdir AI-OLMS
+cd AI-OLMS
+```
+
+### 2. Clone the repository
+
+```bash
+git clone https://github.com/deepthisagar7/AI-OLMS.git .
+```
+
+### 3. Build the WAR file
+
+```bash
+mvn clean package
+```
+
+### 4. Create `docker-compose.yml`
+
+```yaml
+services:
+  tomcat:
+    image: tomcat:10.1-jdk17-temurin
+    container_name: olms-tomcat
+    ports:
+      - "8080:8080"
+    environment:
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_NAME: olms_db
+      DB_USER: olms_user
+      DB_PASSWORD: olms123
+    depends_on:
+      - mysql
+    networks:
+      - olms-network
+    volumes:
+      - ./target/ai-olms.war:/usr/local/tomcat/webapps/ai-olms.war
+    restart: always
+
+  mysql:
+    image: mysql:8.0
+    container_name: olms-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root123
+      MYSQL_DATABASE: olms_db
+      MYSQL_USER: olms_user
+      MYSQL_PASSWORD: olms123
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    networks:
+      - olms-network
+    restart: always
+
+networks:
+  olms-network:
+    driver: bridge
+
+volumes:
+  mysql-data:
+```
+
+### 5. Validate YAML file
+
+```bash
+docker compose config
+```
+
+### 6. Download images and build containers
+
+```bash
+docker compose build
+```
+
+### 7. Start containers
+
+```bash
+docker compose up -d
+```
+
+### 8. Check running containers
+
+```bash
+docker compose ps
+```
+
+### 9. Check logs
+
+```bash
+docker compose logs
+```
+
+### 10. Access application
+
+```text
+http://localhost:8080
+http://localhost:8080/ai-olms/
+```
+
+### 11. Stop containers
+
+```bash
+docker compose down
+```
+
+### 12. Remove containers and volumes
+
+```bash
+docker compose down -v
+```
+
+///
+### 1. Create project folder
+
+```bash
+mkdir nagios-monitoring
+cd nagios-monitoring
+```
+
+### 2. Create `docker-compose.yml`
+
+```yaml
+services:
+  web:
+    image: nginx:latest
+    container_name: web-app
+    ports:
+      - "8081:80"
+    networks:
+      - monitoring-network
+    restart: always
+
+  nagios:
+    image: jasonrivers/nagios:latest
+    container_name: nagios-server
+    ports:
+      - "8080:80"
+    networks:
+      - monitoring-network
+    depends_on:
+      - web
+    restart: always
+
+networks:
+  monitoring-network:
+    driver: bridge
+```
+
+### 3. Validate YAML
+
+```bash
+docker compose config
+```
+
+### 4. Start services
+
+```bash
+docker compose up -d
+```
+
+### 5. Check containers
+
+```bash
+docker compose ps
+```
+
+### 6. Check logs
+
+```bash
+docker compose logs
+```
+
+### 7. Access through browser
+
+**Web application:**
+```text
+http://localhost:8081
+```
+
+**Nagios monitoring interface:**
+```text
+http://localhost:8080
+```
+
+**Nagios default login:**
+```text
+Username: nagiosadmin
+Password: nagios
+```
+
+### 8. Stop services
+
+```bash
+docker compose down
+```
+///
+### 1. Create project folder
+
+```bash
+mkdir web-mysql
+cd web-mysql
+```
+
+### 2. Create `docker-compose.yml`
+
+```yaml
+services:
+  web:
+    image: wordpress:latest
+    container_name: web-app
+    ports:
+      - "8080:80"
+    environment:
+      WORDPRESS_DB_HOST: mysql:3306
+      WORDPRESS_DB_USER: wordpress
+      WORDPRESS_DB_PASSWORD: wordpress123
+      WORDPRESS_DB_NAME: wordpress_db
+    depends_on:
+      - mysql
+    networks:
+      - web-network
+    restart: always
+
+  mysql:
+    image: mysql:8.0
+    container_name: mysql-db
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: root123
+      MYSQL_DATABASE: wordpress_db
+      MYSQL_USER: wordpress
+      MYSQL_PASSWORD: wordpress123
+    volumes:
+      - mysql-data:/var/lib/mysql
+    networks:
+      - web-network
+    restart: always
+
+networks:
+  web-network:
+    driver: bridge
+
+volumes:
+  mysql-data:
+```
+
+### 3. Validate YAML
+
+```bash
+docker compose config
+```
+
+### 4. Start services
+
+```bash
+docker compose up -d
+```
+
+### 5. Check containers
+
+```bash
+docker compose ps
+```
+
+### 6. Check logs
+
+```bash
+docker compose logs
+```
+
+### 7. Access application
+
+Open browser:
+
+```text
+http://localhost:8080
+```
+
+Complete the WordPress installation.
+
+### 8. Stop services
+
+```bash
+docker compose down
+```
+
+### 9. Remove containers and database volume
+
+```bash
+docker compose down -v
+```
+**Docker Compose practical – WordPress and MySQL **.
 
 We'll solve all five subquestions (a–e), understand every line of the YAML file, execute it in VS Code and verify the WordPress website in the browser.
 
