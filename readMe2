@@ -1,0 +1,3208 @@
+t **Docker Compose practical – WordPress and MySQL **.
+
+We'll solve all five subquestions (a–e), understand every line of the YAML file, execute it in VS Code and verify the WordPress website in the browser.
+
+# Q1. Docker Compose – WordPress and MySQL
+
+## 1. Understand the Architecture
+
+We need two containers:
+
+1. **WordPress:** Used to create and manage the blogging website.
+2. **MySQL:** Stores WordPress data, such as users, posts, comments and settings.
+
+
+
+Architecture:
+
+```text
+             USER
+               |
+               |
+          WEB BROWSER
+               |
+               |
+        localhost:8080
+               |
+               |
+       WORDPRESS CONTAINER
+            Port 80
+               |
+               |
+          DOCKER NETWORK
+               |
+               |
+         MYSQL CONTAINER
+            Port 3306
+               |
+               |
+          MYSQL VOLUME
+          (Persistent Data)
+```
+
+---
+
+# 2. Create Project Folder
+
+Open VS Code.
+
+Open Terminal → PowerShell.
+
+Create a folder:
+
+```bash
+mkdir wordpress-project
+```
+
+Move into the folder:
+
+```bash
+cd wordpress-project
+```
+
+Create the Compose file:
+
+```bash
+code docker-compose.yml
+```
+
+If `code` doesn't work, create a new file manually in VS Code and name it:
+
+```text
+docker-compose.yml
+```
+
+---
+
+# (a) Write a Docker Compose File to Run WordPress and MySQL
+
+### Step 1: Write the configuration
+
+Open `docker-compose.yml`.
+
+Write:
+
+```yaml
+services:
+
+  wordpress:
+    image: wordpress:latest
+    container_name: wordpress-app
+
+  mysql:
+    image: mysql:8.0
+    container_name: wordpress-db
+```
+
+Save the file.
+
+### Explanation
+
+**1. services**
+
+```yaml
+services:
+```
+
+Defines multiple containers that Docker Compose will create.
+
+**2. WordPress**
+
+```yaml
+wordpress:
+  image: wordpress:latest
+```
+
+- `wordpress` is the service name.
+- `image` specifies the Docker image.
+- `latest` specifies the latest available image tag.
+
+**3. MySQL**
+
+```yaml
+mysql:
+  image: mysql:8.0
+```
+
+Creates a MySQL database service using MySQL 8.0.
+
+**Important:** This is the basic structure. To actually start WordPress and MySQL successfully, we must configure database credentials.
+
+---
+
+# (b) Configure Port Mapping: Host 8080 to Container 80
+
+### Question
+
+Users cannot access the WordPress website.
+
+We need to map host port 8080 to container port 80.
+
+### Step 1: Add port mapping
+
+Update your file:
+
+```yaml
+services:
+
+  wordpress:
+    image: wordpress:latest
+    container_name: wordpress-app
+    ports:
+      - "8080:80"
+
+  mysql:
+    image: mysql:8.0
+    container_name: wordpress-db
+```
+
+### Explanation
+
+```yaml
+ports:
+  - "8080:80"
+```
+
+| Port | Meaning |
+|---|---|
+| 8080 | Host machine port |
+| 80 | WordPress container port |
+
+**How does it work?**
+
+When a user enters:
+
+```text
+http://localhost:8080
+```
+
+Docker forwards the request to port 80 inside the WordPress container.
+
+Therefore, the WordPress website becomes accessible.
+
+---
+
+# (c) Use depends_on to Configure Service Dependency
+
+### Question
+
+WordPress starts before MySQL and causes database errors.
+
+We need to configure WordPress to depend on MySQL.
+
+### Step 1: Add depends_on
+
+Update the file:
+
+```yaml
+services:
+
+  wordpress:
+    image: wordpress:latest
+    container_name: wordpress-app
+    ports:
+      - "8080:80"
+    depends_on:
+      - mysql
+
+  mysql:
+    image: mysql:8.0
+    container_name: wordpress-db
+```
+
+### Explanation
+
+```yaml
+depends_on:
+  - mysql
+```
+
+This tells Docker Compose:
+
+1. Start MySQL first.
+2. Then start WordPress.
+
+**Important viva question:**
+
+Does `depends_on` guarantee that MySQL is ready?
+
+**Answer:** No. Basic `depends_on` controls startup order, but it does not wait until MySQL is ready to accept connections.
+
+For that, we use a health check.
+
+Example:
+
+```yaml
+mysql:
+  image: mysql:8.0
+  healthcheck:
+    test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+    interval: 10s
+    timeout: 5s
+    retries: 5
+```
+
+Then configure WordPress:
+
+```yaml
+depends_on:
+  mysql:
+    condition: service_healthy
+```
+
+This makes WordPress wait until MySQL passes its health check.
+
+---
+
+# (d) Configure a Named Volume for Persistent Storage
+
+### Question
+
+The company wants to protect blog data from loss when the MySQL container stops or is deleted.
+
+### Solution: Docker Volume
+
+A Docker volume stores database data separately from the container.
+
+### Step 1: Add volume configuration
+
+```yaml
+services:
+
+  wordpress:
+    image: wordpress:latest
+    container_name: wordpress-app
+    ports:
+      - "8080:80"
+    depends_on:
+      - mysql
+
+  mysql:
+    image: mysql:8.0
+    container_name: wordpress-db
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+volumes:
+  mysql_data:
+```
+
+### Explanation
+
+**1. Volume mapping**
+
+```yaml
+volumes:
+  - mysql_data:/var/lib/mysql
+```
+
+| Part | Meaning |
+|---|---|
+| `mysql_data` | Named Docker volume |
+| `/var/lib/mysql` | MySQL data storage directory inside container |
+
+**2. Volume declaration**
+
+```yaml
+volumes:
+  mysql_data:
+```
+
+Creates a named volume called `mysql_data`.
+
+### How does it work?
+
+Suppose:
+
+1. WordPress stores blog information in MySQL.
+2. MySQL stores that information in `mysql_data`.
+3. The MySQL container gets deleted.
+4. The named volume remains.
+5. A new MySQL container can reuse the same volume.
+
+Therefore, blog data is preserved.
+
+**Important:** `docker compose down -v` removes Compose-managed volumes too. Avoid using `-v` if you want to preserve database data.
+
+---
+
+# (e) Complete Docker Compose File (Most Important – 25 Marks)
+
+Now combine all the requirements:
+
+1. WordPress container.
+2. MySQL container.
+3. Port mapping 8080:80.
+4. Service dependency using `depends_on`.
+5. Persistent named volume.
+6. Database credentials.
+7. MySQL health check.
+
+## Final docker-compose.yml
+
+Copy this complete code into your file:
+
+```yaml
+services:
+
+  wordpress:
+    image: wordpress:latest
+    container_name: wordpress-app
+    restart: always
+
+    ports:
+      - "8080:80"
+
+    environment:
+      WORDPRESS_DB_HOST: mysql:3306
+      WORDPRESS_DB_USER: wordpress
+      WORDPRESS_DB_PASSWORD: wordpress123
+      WORDPRESS_DB_NAME: wordpress_db
+
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  mysql:
+    image: mysql:8.0
+    container_name: wordpress-db
+    restart: always
+
+    environment:
+      MYSQL_ROOT_PASSWORD: root123
+      MYSQL_DATABASE: wordpress_db
+      MYSQL_USER: wordpress
+      MYSQL_PASSWORD: wordpress123
+
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  mysql_data:
+```
+
+Save the file using:
+
+```text
+Ctrl + S
+```
+
+## Understand the Complete Configuration
+
+| Configuration | Purpose |
+|---|---|
+| `services` | Defines containers |
+| `wordpress` | WordPress service |
+| `mysql` | MySQL service |
+| `image` | Specifies Docker image |
+| `container_name` | Assigns container name |
+| `ports` | Maps host and container ports |
+| `environment` | Sets environment variables |
+| `depends_on` | Controls service dependency |
+| `condition: service_healthy` | Waits for MySQL health check |
+| `healthcheck` | Checks MySQL availability |
+| `volumes` | Provides persistent storage |
+| `restart: always` | Automatically restarts containers |
+
+### Important: Database connection
+
+```yaml
+WORDPRESS_DB_HOST: mysql:3306
+```
+
+Here:
+
+- `mysql` = MySQL service name.
+- `3306` = MySQL container port.
+
+WordPress communicates with MySQL through Docker's internal network.
+
+We use `mysql`, not `localhost`, because `localhost` inside WordPress refers to the WordPress container itself.
+
+---
+
+# 3. Execute the Docker Compose File
+
+Now let's run the project practically.
+
+### STEP 1: Check Docker
+
+```bash
+docker --version
+```
+
+```bash
+docker compose version
+```
+
+Make sure Docker Desktop is running.
+
+### STEP 2: Validate YAML file
+
+```bash
+docker compose config
+```
+
+Expected output:
+
+Docker Compose displays the complete configuration without errors.
+
+### STEP 3: Download images and start containers
+
+```bash
+docker compose up -d
+```
+
+Explanation:
+
+- `up` → Creates and starts containers.
+- `-d` → Runs containers in the background.
+
+Docker Compose automatically:
+
+1. Downloads WordPress image.
+2. Downloads MySQL image.
+3. Creates the MySQL container.
+4. Creates the named volume.
+5. Waits for MySQL to become healthy.
+6. Starts the WordPress container.
+
+### STEP 4: Check running containers
+
+```bash
+docker ps
+```
+
+Expected output:
+
+| Container | Image | Status |
+|---|---|---|
+| wordpress-app | wordpress:latest | Up |
+| wordpress-db | mysql:8.0 | Up (healthy) |
+
+Wait until MySQL becomes healthy and WordPress starts.
+
+### STEP 5: Check logs
+
+WordPress logs:
+
+```bash
+docker logs wordpress-app
+```
+
+MySQL logs:
+
+```bash
+docker logs wordpress-db
+```
+
+### STEP 6: Verify volume
+
+```bash
+docker volume ls
+```
+
+Expected:
+
+```text
+DRIVER    VOLUME NAME
+local     wordpress-project_mysql_data
+```
+
+The exact volume name may differ depending on your Compose project name.
+
+### STEP 7: Access WordPress in Browser
+
+Open Chrome.
+
+Enter:
+
+```text
+http://localhost:8080
+```
+
+Expected output:
+
+
+
+You should see the WordPress installation page.
+
+Select:
+
+1. Language.
+2. Site Title.
+3. Username.
+4. Password.
+5. Email address.
+
+Click **Install WordPress**.
+
+Your WordPress blogging website is ready! 🎉
+
+---
+
+# 4. Important Docker Compose Commands for Viva
+
+| Command | Purpose |
+|---|---|
+| `docker compose up -d` | Start all containers |
+| `docker compose down` | Stop and remove containers |
+| `docker compose ps` | Display services |
+| `docker compose logs` | Display logs |
+| `docker compose restart` | Restart services |
+| `docker compose stop` | Stop services |
+| `docker compose start` | Start stopped services |
+| `docker compose pull` | Download images |
+| `docker compose config` | Validate YAML |
+| `docker images` | Display images |
+| `docker ps` | Display running containers |
+| `docker volume ls` | Display volumes |
+| `docker network ls` | Display networks |
+
+### How to stop containers?
+
+```bash
+docker compose stop
+```
+
+### How to start again?
+
+```bash
+docker compose start
+```
+
+### How to remove containers?
+
+```bash
+docker compose down
+```
+
+**Remember:** `docker compose down` preserves named volumes by default.
+
+### How to check MySQL database?
+
+```bash
+docker exec -it wordpress-db mysql -uwordpress -p
+```
+
+Enter:
+
+```text
+wordpress123
+```
+
+Then execute:
+
+```sql
+SHOW DATABASES;
+```
+
+You should see:
+
+```text
+wordpress_db
+```
+
+Exit:
+
+```sql
+EXIT;
+```
+
+---
+
+# 5. Important Scenario-Based Viva Questions
+
+### Q1. What happens if the MySQL container stops?
+
+WordPress cannot access the database. Therefore, login, posting and other database operations may fail.
+
+Solution:
+
+```bash
+docker compose restart mysql
+```
+
+### Q2. How do you preserve WordPress data?
+
+Use a Docker named volume.
+
+```yaml
+volumes:
+  - mysql_data:/var/lib/mysql
+```
+
+### Q3. What is the purpose of `depends_on`?
+
+It defines the startup dependency between services.
+
+### Q4. Why do we use port mapping?
+
+To allow users to access the WordPress application through the host machine.
+
+```yaml
+ports:
+  - "8080:80"
+```
+
+### Q5. What is the difference between `depends_on` and healthcheck?
+
+- `depends_on`: Controls service startup order.
+- `healthcheck`: Checks whether a service is healthy and ready.
+
+### Q6. Can WordPress and MySQL communicate without exposing MySQL port 3306?
+
+Yes. Both containers communicate through their internal Docker network.
+
+### Q7. What happens if we delete the MySQL container?
+
+The container is deleted, but the database information remains in the named volume, provided the volume is not deleted.
+
+### Q8. Why do we use environment variables?
+
+To configure database names, usernames, passwords and other application settings.
+
+### Q9. What is the default WordPress container port?
+
+80.
+
+### Q10. What is the default MySQL port?
+
+3306.
+
+---
+
+# 6. Troubleshooting
+
+| Error | Solution |
+|---|---|
+| Docker is not running | Start Docker Desktop |
+| Port 8080 already occupied | Change host port to 8081 |
+| WordPress database connection error | Verify MySQL credentials |
+| MySQL container not healthy | Check MySQL logs |
+| WordPress starts too early | Configure healthcheck and `depends_on` |
+| Website not opening | Check `docker ps` |
+| YAML parsing error | Correct indentation |
+| Database information lost | Verify named volume exists |
+
+---
+
+# 7. Final Exam Revision
+
+### Important YAML concepts
+
+| Question | Answer |
+|---|---|
+| WordPress image | `wordpress:latest` |
+| MySQL image | `mysql:8.0` |
+| WordPress host port | 8080 |
+| WordPress container port | 80 |
+| MySQL port | 3306 |
+| Database name | wordpress_db |
+| WordPress DB host | mysql:3306 |
+| Dependency | depends_on |
+| Persistent storage | mysql_data |
+| MySQL storage path | /var/lib/mysql |
+
+### Most Important Commands
+
+Learn these five commands:
+
+```bash
+# 1. Validate configuration
+docker compose config
+
+# 2. Start containers
+docker compose up -d
+
+# 3. Check containers
+docker compose ps
+
+# 4. Check logs
+docker compose logs
+
+# 5. Stop and remove containers
+docker compose down
+```
+
+### Expected Final Output
+
+You must demonstrate:
+
+1. `docker-compose.yml` file containing both services.
+2. Two successfully running containers.
+3. WordPress accessible at `http://localhost:8080`.
+4. MySQL database successfully configured.
+5. Named volume created for persistent storage.
+
+**⭐ Exam tip:** For part (e), write the complete YAML file. It covers almost every concept asked in parts (a), (b), (c) and (d).
+
+Remember these four keywords especially:
+
+**Port Mapping + depends_on + Healthcheck + Named Volume.** 💗
+We'll cover:
+1. Pulling Tomcat and MySQL images.
+2. Cloning the GitHub repository.
+3. Building the Maven project.
+4. Generating the WAR file.
+5. Creating a Docker network.
+6. Creating MySQL and Tomcat containers.
+7. Connecting both containers.
+8. Deploying and accessing AI-OLMS.
+9. Important Docker commands.
+10. Scenario-based viva questions with answers.
+
+# Experiment: Docker – Multi-Container Application (20 Marks)
+
+## 1. Understand the architecture
+
+We need to run two separate Docker containers.
+
+
+
+| Container | Purpose | Port |
+|---|---|---|
+| Tomcat | Runs Java web application | 8080 |
+| MySQL | Stores student and course information | 3306 |
+
+**How communication happens:**
+
+1. Student opens AI-OLMS in the browser.
+2. Browser sends a request to Tomcat.
+3. Tomcat processes the request.
+4. Tomcat communicates with MySQL.
+5. MySQL retrieves or stores information.
+6. Tomcat sends the response to the browser.
+
+Both containers communicate through a common Docker network.
+
+---
+
+# STEP 1: Open Docker Desktop
+
+1. Open Docker Desktop.
+2. Wait until Docker Engine starts.
+3. Open VS Code.
+4. Open Terminal.
+
+Check Docker installation:
+
+```bash
+docker --version
+```
+
+Check whether Docker is running:
+
+```bash
+docker info
+```
+
+**Expected output:**
+
+Docker version information and Docker Engine details.
+
+---
+
+# STEP 2: Clone the GitHub Repository
+
+Our GitHub repository:
+
+[AI-OLMS GitHub Repository](https://github.com/deepthisagar7/AI-OLMS.git?utm_source=chatgpt.com)
+
+Execute:
+
+```bash
+git clone https://github.com/deepthisagar7/AI-OLMS.git
+```
+
+Go inside the project:
+
+```bash
+cd AI-OLMS
+```
+
+Check the files:
+
+```bash
+dir
+```
+
+You should find:
+
+```text
+AI-OLMS
+   |
+   |--- pom.xml
+   |
+   |--- src
+        |
+        |--- main
+             |
+             |--- webapp
+```
+
+**Important:** This repository uses Maven WAR packaging and Java 17. It uses Jakarta Servlet 6.0, so we'll use Tomcat 10.1 rather than Tomcat 9. [GitHub](https://github.com/deepthisagar7/AI-OLMS/blob/main/pom.xml)
+
+---
+
+# STEP 3: Build the Maven Project
+
+First, check Java:
+
+```bash
+java -version
+```
+
+Check Maven:
+
+```bash
+mvn -version
+```
+
+Now build the project:
+
+```bash
+mvn clean package
+```
+
+### What does this command do?
+
+| Command | Meaning |
+|---|---|
+| `mvn` | Executes Maven |
+| `clean` | Removes previously generated build files |
+| `package` | Compiles the project and packages it into a WAR file |
+
+**Expected output:**
+
+```text
+BUILD SUCCESS
+```
+
+### Where is the WAR file generated?
+
+After successful compilation:
+
+```text
+AI-OLMS
+    |
+    |--- target
+           |
+           |--- ai-olms.war
+```
+
+The WAR file is the deployable Java web application.
+
+**Remember:** WAR stands for Web Application Archive.
+
+---
+
+# STEP 4: Pull Required Docker Images
+
+We need two Docker images:
+
+1. Tomcat
+2. MySQL
+
+### 4.1 Pull Tomcat image
+
+Execute:
+
+```bash
+docker pull tomcat:10.1-jdk17-temurin
+```
+
+Explanation:
+
+- `docker pull` downloads an image.
+- `tomcat` is the image name.
+- `10.1-jdk17-temurin` specifies the Tomcat and Java version.
+
+### 4.2 Pull MySQL image
+
+Execute:
+
+```bash
+docker pull mysql:8.0
+```
+
+Explanation:
+
+- `mysql` is the database image.
+- `8.0` is the version.
+
+### 4.3 Verify downloaded images
+
+```bash
+docker images
+```
+
+Expected output (image IDs and sizes will differ):
+
+| Repository | Tag |
+|---|---|
+| tomcat | 10.1-jdk17-temurin |
+| mysql | 8.0 |
+
+**Viva:** What is a Docker image?
+
+An image is a read-only template used to create Docker containers.
+
+---
+
+# STEP 5: Create a Docker Network
+
+Why do we need a network?
+
+Our Tomcat application must communicate with the MySQL database.
+
+Create a network:
+
+```bash
+docker network create olms-network
+```
+
+Verify:
+
+```bash
+docker network ls
+```
+
+You should see:
+
+```text
+olms-network
+```
+
+### What is a Docker network?
+
+A Docker network allows multiple containers to communicate with each other.
+
+Here:
+
+```text
+olms-network
+      |
+      |------ Tomcat Container
+      |
+      |------ MySQL Container
+```
+
+**Important:** We can use the MySQL container name as the hostname when connecting from Tomcat.
+
+---
+
+# STEP 6: Create a MySQL Container
+
+Now we create the database container.
+
+Execute:
+
+```bash
+docker run -d --name olms-db --network olms-network -e MYSQL_ROOT_PASSWORD=root123 -e MYSQL_DATABASE=olms_db -p 3306:3306 -v olms-data:/var/lib/mysql mysql:8.0
+```
+
+Let's understand every option.
+
+| Command | Meaning |
+|---|---|
+| `docker run` | Creates and starts a container |
+| `-d` | Runs in background |
+| `--name olms-db` | Assigns container name |
+| `--network olms-network` | Connects to Docker network |
+| `-e MYSQL_ROOT_PASSWORD=root123` | Sets MySQL root password |
+| `-e MYSQL_DATABASE=olms_db` | Creates database |
+| `-p 3306:3306` | Maps MySQL port |
+| `-v olms-data:/var/lib/mysql` | Stores database files in a volume |
+| `mysql:8.0` | Uses MySQL image |
+
+### Verify MySQL container
+
+```bash
+docker ps
+```
+
+Expected:
+
+```text
+CONTAINER ID   IMAGE       STATUS
+xxxxxx         mysql:8.0   Up
+```
+
+### Check MySQL logs
+
+```bash
+docker logs olms-db
+```
+
+Wait until MySQL initialization finishes.
+
+Look for a message indicating that MySQL is ready for connections.
+
+### Why did we create a volume?
+
+```bash
+-v olms-data:/var/lib/mysql
+```
+
+A Docker volume stores database information outside the container's writable layer.
+
+Even if we delete the MySQL container, the database information remains in the volume.
+
+---
+
+# STEP 7: Create the Tomcat Application Container
+
+Now create the Tomcat container.
+
+Execute:
+
+```bash
+docker run -d --name olms-app --network olms-network -p 8080:8080 tomcat:10.1-jdk17-temurin
+```
+
+Explanation:
+
+| Command | Meaning |
+|---|---|
+| `docker run` | Creates and starts container |
+| `-d` | Runs in background |
+| `--name olms-app` | Container name |
+| `--network olms-network` | Connects to common network |
+| `-p 8080:8080` | Maps Tomcat port |
+| `tomcat:10.1-jdk17-temurin` | Tomcat image |
+
+Check containers:
+
+```bash
+docker ps
+```
+
+Expected:
+
+```text
+CONTAINER ID   IMAGE                        STATUS
+xxxxxx         mysql:8.0                    Up
+xxxxxx         tomcat:10.1-jdk17-temurin    Up
+```
+
+Now both containers are running.
+
+---
+
+# STEP 8: Deploy the WAR File into Tomcat
+
+This is an important step!
+
+We already generated:
+
+```text
+target/ai-olms.war
+```
+
+Now copy it into the Tomcat container.
+
+**On Windows PowerShell, execute:**
+
+```bash
+docker cp target/ai-olms.war olms-app:/usr/local/tomcat/webapps/ai-olms.war
+```
+
+Explanation:
+
+| Part | Meaning |
+|---|---|
+| `docker cp` | Copies files between host and container |
+| `target/ai-olms.war` | Source WAR file |
+| `olms-app` | Destination container |
+| `/usr/local/tomcat/webapps/` | Tomcat deployment directory |
+
+Tomcat automatically detects the WAR file and deploys the application.
+
+### Verify deployment
+
+```bash
+docker logs olms-app
+```
+
+You can also check:
+
+```bash
+docker exec olms-app ls /usr/local/tomcat/webapps
+```
+
+Expected:
+
+```text
+ROOT
+docs
+examples
+host-manager
+manager
+ai-olms
+ai-olms.war
+```
+
+The `ai-olms` folder indicates that Tomcat has extracted the WAR file.
+
+---
+
+# STEP 9: Access AI-OLMS Through Browser
+
+Open Google Chrome.
+
+Enter:
+
+```text
+http://localhost:8080/ai-olms/
+```
+
+Your AI-OLMS application should open.
+
+**Expected output:**
+
+The AI-OLMS web application should be displayed in the browser.
+
+If the application has a different welcome page or URL mapping, use its configured entry page.
+
+---
+
+# STEP 10: Verify Container Communication
+
+We created both containers using:
+
+```text
+olms-network
+```
+
+Check the network:
+
+```bash
+docker network inspect olms-network
+```
+
+You should see both containers:
+
+```text
+olms-app
+olms-db
+```
+
+### Test MySQL connectivity
+
+Execute:
+
+```bash
+docker exec -it olms-db mysql -uroot -proot123
+```
+
+You should enter the MySQL command-line interface.
+
+Execute:
+
+```sql
+SHOW DATABASES;
+```
+
+Expected:
+
+```text
+information_schema
+mysql
+olms_db
+performance_schema
+sys
+```
+
+Exit MySQL:
+
+```sql
+EXIT;
+```
+
+### Important database connection concept
+
+If your Java application uses MySQL, its JDBC connection should use:
+
+```text
+Host: olms-db
+Port: 3306
+Database: olms_db
+Username: root
+Password: root123
+```
+
+**Very important:**
+
+Inside the Tomcat container, the MySQL hostname is:
+
+```text
+olms-db
+```
+
+NOT:
+
+```text
+localhost
+```
+
+Why?
+
+Because `localhost` inside the Tomcat container refers to the Tomcat container itself, not the MySQL container.
+
+### One important repository-specific note
+
+The repository's current `pom.xml` contains Jakarta Servlet API but does not list the MySQL JDBC driver. It also does not establish a database connection by itself. [GitHub](https://github.com/deepthisagar7/AI-OLMS/blob/main/pom.xml)
+
+Therefore, creating both containers establishes the Docker infrastructure, but actual student/course database operations require MySQL JDBC dependency, connection configuration and application database code.
+
+For the practical, demonstrate the containers and network separately if the supplied application does not already have database integration.
+
+---
+
+# STEP 11: Important Docker Commands for Practical
+
+Learn these commands. They are very important for the exam.
+
+| Command | Purpose |
+|---|---|
+| `docker --version` | Check Docker version |
+| `docker info` | Check Docker Engine |
+| `docker pull tomcat` | Download Tomcat image |
+| `docker pull mysql` | Download MySQL image |
+| `docker images` | List images |
+| `docker ps` | Show running containers |
+| `docker ps -a` | Show all containers |
+| `docker network ls` | List networks |
+| `docker volume ls` | List volumes |
+| `docker logs olms-app` | Check application logs |
+| `docker logs olms-db` | Check database logs |
+| `docker stop olms-app` | Stop application container |
+| `docker stop olms-db` | Stop database container |
+| `docker start olms-app` | Start application container |
+| `docker start olms-db` | Start database container |
+| `docker rm olms-app` | Delete application container |
+| `docker exec -it olms-db bash` | Open database container terminal |
+| `docker inspect olms-app` | Inspect container details |
+| `docker network inspect olms-network` | Inspect network |
+| `docker volume inspect olms-data` | Inspect volume |
+
+### How to stop all containers?
+
+```bash
+docker stop olms-app olms-db
+```
+
+### How to restart containers?
+
+```bash
+docker start olms-db olms-app
+```
+
+**Important:** Start MySQL before starting the application.
+
+---
+
+# STEP 12: Cleanup (Optional)
+
+If you want to delete the containers after completing the practical:
+
+```bash
+docker stop olms-app olms-db
+```
+
+Remove containers:
+
+```bash
+docker rm olms-app olms-db
+```
+
+Remove network:
+
+```bash
+docker network rm olms-network
+```
+
+**Do not delete the volume if you want to preserve database information.**
+
+To delete the volume permanently:
+
+```bash
+docker volume rm olms-data
+```
+
+---
+
+# Scenario-Based Viva Questions and Answers
+
+These five questions are given in your practical question paper. Prepare these answers.
+
+### 1. What happens if the MySQL container stops while students are accessing the AI-OLMS portal?
+
+**Answer:**
+
+If the MySQL container stops, the application cannot retrieve or store student and course information.
+
+- Database requests fail.
+- Login operations may fail.
+- Course information may not load.
+- Students may experience application errors.
+
+**Solution:**
+
+Restart the MySQL container:
+
+```bash
+docker start olms-db
+```
+
+Check its logs:
+
+```bash
+docker logs olms-db
+```
+
+For production, we can use database health checks, monitoring and appropriate recovery mechanisms.
+
+### 2. How can you preserve student and course information even after deleting the MySQL container?
+
+**Answer:**
+
+We can use Docker volumes.
+
+A volume stores database information outside the container.
+
+Command:
+
+```bash
+docker run -d --name olms-db -v olms-data:/var/lib/mysql mysql:8.0
+```
+
+Even if the container is deleted, the volume preserves the database information.
+
+### 3. Why should the AI-OLMS application and MySQL database run in separate containers?
+
+**Answer:**
+
+Running them in separate containers provides:
+
+1. Isolation – Application and database run independently.
+2. Scalability – We can scale the application separately.
+3. Maintenance – We can update one service without rebuilding the other.
+4. Resource management – Resources can be managed independently.
+5. Reusability – Different applications can connect to the same database service when configured securely.
+
+### 4. How can you protect student login credentials and course information from unauthorized access?
+
+**Answer:**
+
+We can implement the following security measures:
+
+1. Use strong database passwords.
+2. Store passwords using secure hashing algorithms.
+3. Use HTTPS for secure communication.
+4. Avoid exposing MySQL port publicly.
+5. Use environment variables or Docker secrets for credentials.
+6. Apply proper authentication and authorization.
+7. Follow the principle of least privilege.
+8. Regularly back up the database.
+
+### 5. How would you troubleshoot the application if it cannot connect to the MySQL database?
+
+**Answer:**
+
+We should follow these steps:
+
+**Step 1:** Check whether the MySQL container is running.
+
+```bash
+docker ps
+```
+
+**Step 2:** Check MySQL logs.
+
+```bash
+docker logs olms-db
+```
+
+**Step 3:** Check whether both containers are connected to the same network.
+
+```bash
+docker network inspect olms-network
+```
+
+**Step 4:** Verify database credentials.
+
+Check:
+- Username
+- Password
+- Database name
+- Port number
+
+**Step 5:** Verify the database hostname.
+
+It should be:
+
+```text
+olms-db
+```
+
+**Step 6:** Check application logs.
+
+```bash
+docker logs olms-app
+```
+
+**Step 7:** Restart containers if required.
+
+```bash
+docker restart olms-db
+docker restart olms-app
+```
+
+---
+
+# Additional Important Viva Questions
+
+### Basic Docker Questions
+
+**1. What is Docker?**
+
+Docker is a platform used to develop, package and run applications inside containers.
+
+**2. What is a container?**
+
+A container is a lightweight, isolated environment used to run an application.
+
+**3. What is the difference between an image and a container?**
+
+- Image: Template used to create containers.
+- Container: Running instance of an image.
+
+**4. What is Docker Hub?**
+
+Docker Hub is an online repository where Docker images are stored and shared.
+
+**5. What is Dockerfile?**
+
+A Dockerfile is a text file containing instructions to build a Docker image.
+
+**6. What is Docker Compose?**
+
+Docker Compose is a tool used to define and manage multiple containers using a YAML configuration file.
+
+**7. What is port mapping?**
+
+Port mapping connects a host machine's port to a container's port.
+
+Example:
+
+```bash
+-p 8080:8080
+```
+
+Here:
+- First 8080 = Host port.
+- Second 8080 = Container port.
+
+**8. What is a Docker volume?**
+
+A Docker volume is used to persist data even after a container is deleted.
+
+**9. What is the difference between `docker run` and `docker start`?**
+
+- `docker run`: Creates and starts a new container.
+- `docker start`: Starts an existing stopped container.
+
+**10. What is the difference between `docker stop` and `docker rm`?**
+
+- `docker stop`: Stops a container.
+- `docker rm`: Removes a stopped container.
+
+### Application and Database Questions
+
+**11. What is Tomcat?**
+
+Tomcat is a Java web server and servlet container used to run Java web applications.
+
+**12. What is MySQL?**
+
+MySQL is a relational database management system used to store and manage structured data.
+
+**13. What is WAR?**
+
+WAR stands for Web Application Archive. It contains Java web application files.
+
+**14. What is Maven?**
+
+Maven is a build automation and dependency management tool used in Java projects.
+
+**15. What is the default Tomcat port?**
+
+8080.
+
+**16. What is the default MySQL port?**
+
+3306.
+
+**17. Why do we use a Docker network?**
+
+To enable communication between multiple containers.
+
+**18. Can two containers communicate without exposing ports to the host?**
+
+Yes. Containers connected to the same user-defined Docker network can communicate using container names and internal ports.
+
+**19. What happens if we delete a container?**
+
+The container is removed, but its image and separately stored Docker volumes remain unless explicitly deleted.
+
+**20. What is the difference between `docker ps` and `docker ps -a`?**
+
+- `docker ps`: Displays running containers.
+- `docker ps -a`: Displays all containers, including stopped ones.
+
+---
+
+# Final Practical Execution Flow
+
+Remember this sequence for your examination:
+
+| Step | Command / Activity |
+|---|---|
+| 1 | Start Docker Desktop |
+| 2 | `git clone <repository>` |
+| 3 | `cd AI-OLMS` |
+| 4 | `mvn clean package` |
+| 5 | `docker pull tomcat:10.1-jdk17-temurin` |
+| 6 | `docker pull mysql:8.0` |
+| 7 | `docker network create olms-network` |
+| 8 | Create MySQL container |
+| 9 | Create Tomcat container |
+| 10 | Copy WAR file into Tomcat |
+| 11 | Verify containers using `docker ps` |
+| 12 | Verify network using `docker network inspect` |
+| 13 | Open `http://localhost:8080/ai-olms/` |
+
+### Expected Final Architecture
+
+```text
+              STUDENT / INSTRUCTOR
+                       |
+                       |
+                   WEB BROWSER
+                       |
+                       |
+                 localhost:8080
+                       |
+                       |
+              TOMCAT CONTAINER
+                  olms-app
+                       |
+                       |
+                olms-network
+                       |
+                       |
+              MYSQL CONTAINER
+                  olms-db
+                       |
+                       |
+                  olms-data
+                   (Volume)
+                       |
+                       |
+                STUDENT DATA
+                COURSE DATA
+                ENROLMENT DATA
+```
+
+⭐ **Most important commands to remember for the exam:**
+
+```bash
+mvn clean package
+
+docker pull tomcat:10.1-jdk17-temurin
+
+docker pull mysql:8.0
+
+docker network create olms-network
+
+docker run -d --name olms-db --network olms-network -e MYSQL_ROOT_PASSWORD=root123 -e MYSQL_DATABASE=olms_db -p 3306:3306 -v olms-data:/var/lib/mysql mysql:8.0
+
+docker run -d --name olms-app --network olms-network -p 8080:8080 tomcat:10.1-jdk17-temurin
+
+docker cp target/ai-olms.war olms-app:/usr/local/tomcat/webapps/ai-olms.war
+
+docker ps
+```
+
+**My exam tip:** Give special attention to Docker images vs containers, Docker volumes, Docker networks, port mapping, `docker run`, `docker exec`, and container-to-container communication. These are frequently asked in practical vivas. 💗
+**Docker Compose – Multi-Container Deployment with Nagios (25 Marks)** practically, step by step.
+
+We'll perform the experiment using:
+- **Web application:** Nginx Docker Hub image.
+- **Monitoring tool:** Nagios Docker Hub image.
+- **Docker Compose:** To create and manage both containers together.
+
+I'll explain every command, where to execute it, expected output and important viva questions. 💗
+
+# Experiment: Docker Compose – Multi-Container Deployment with Nagios
+
+## 1. Understand the architecture
+
+We need to create two separate services.
+
+
+
+| Service | Docker Image | Port |
+|---|---|---|
+| Web application | nginx:alpine | 8081 |
+| Nagios monitoring | jasonrivers/nagios:latest | 8080 |
+
+### How does it work?
+
+1. Docker Compose creates the web application container.
+2. Docker Compose creates the Nagios container.
+3. Both containers connect to the same Docker network.
+4. The user accesses the web application through port 8081.
+5. The user accesses Nagios through port 8080.
+6. Nagios can monitor the web application through the Docker network.
+
+**Important:** Nagios needs a monitoring check configured for the web service. Merely starting both containers does not automatically configure Nagios to monitor Nginx.
+
+---
+
+# STEP 1: Start Docker Desktop
+
+1. Open Docker Desktop.
+2. Wait until Docker Engine starts.
+3. Open VS Code.
+4. Open Terminal.
+
+Check Docker:
+
+```bash
+docker --version
+```
+
+Check Docker Compose:
+
+```bash
+docker compose version
+```
+
+Expected output:
+
+```text
+Docker version ...
+Docker Compose version ...
+```
+
+---
+
+# STEP 2: Create a Project Folder
+
+Open your VS Code terminal.
+
+Create a folder:
+
+```bash
+mkdir nagios-compose
+```
+
+Move inside:
+
+```bash
+cd nagios-compose
+```
+
+Create a Docker Compose file:
+
+```bash
+code docker-compose.yml
+```
+
+If the `code` command doesn't work:
+
+1. Open VS Code.
+2. Select File → Open Folder.
+3. Select `nagios-compose`.
+4. Create a new file.
+5. Name it `docker-compose.yml`.
+
+Our folder structure:
+
+```text
+nagios-compose
+      |
+      |---- docker-compose.yml
+```
+
+---
+
+# STEP 3: Pull Required Docker Images
+
+We need two images.
+
+### 3.1 Pull Web Application Image
+
+For demonstration, we'll use Nginx.
+
+```bash
+docker pull nginx:alpine
+```
+
+Nginx is a lightweight web server available on Docker Hub.
+
+### 3.2 Pull Nagios Image
+
+Execute:
+
+```bash
+docker pull jasonrivers/nagios:latest
+```
+
+This downloads Nagios Core with monitoring plugins.
+
+### 3.3 Verify Images
+
+```bash
+docker images
+```
+
+Expected output:
+
+| Repository | Tag |
+|---|---|
+| nginx | alpine |
+| jasonrivers/nagios | latest |
+
+Nagios image reference: [Nagios Docker Hub Repository](https://hub.docker.com/r/jasonrivers/nagios/?utm_source=chatgpt.com)
+
+---
+
+# STEP 4: Create docker-compose.yml
+
+This is the MOST IMPORTANT STEP for this experiment.
+
+Open:
+
+```text
+docker-compose.yml
+```
+
+Write the following configuration:
+
+```yaml
+services:
+
+  web:
+    image: nginx:alpine
+    container_name: olms-web
+    ports:
+      - "8081:80"
+    networks:
+      - olms-network
+    restart: always
+
+  nagios:
+    image: jasonrivers/nagios:latest
+    container_name: olms-nagios
+    ports:
+      - "8080:80"
+    networks:
+      - olms-network
+    restart: always
+
+networks:
+  olms-network:
+    driver: bridge
+```
+
+Save the file.
+
+### Understand every line
+
+**1. services**
+
+```yaml
+services:
+```
+
+Defines the containers that Docker Compose should create.
+
+**2. Web service**
+
+```yaml
+web:
+  image: nginx:alpine
+```
+
+Creates a web application service using the Nginx image.
+
+**3. Container name**
+
+```yaml
+container_name: olms-web
+```
+
+Assigns the container name `olms-web`.
+
+**4. Port mapping**
+
+```yaml
+ports:
+  - "8081:80"
+```
+
+- 8081 = Host machine port.
+- 80 = Container port.
+
+We access the web application using port 8081.
+
+**5. Nagios service**
+
+```yaml
+nagios:
+  image: jasonrivers/nagios:latest
+```
+
+Creates a Nagios monitoring service.
+
+**6. Nagios port**
+
+```yaml
+ports:
+  - "8080:80"
+```
+
+- 8080 = Host machine port.
+- 80 = Nagios container port.
+
+**7. Network**
+
+```yaml
+networks:
+  - olms-network
+```
+
+Connects the services to a common Docker network.
+
+**8. Restart policy**
+
+```yaml
+restart: always
+```
+
+Automatically restarts the container when it stops, subject to Docker's restart policy.
+
+**9. Network definition**
+
+```yaml
+networks:
+  olms-network:
+    driver: bridge
+```
+
+Creates a bridge network for communication between containers.
+
+Docker Compose can also create a default network automatically, but here we explicitly define one.
+
+---
+
+# STEP 5: Validate the Docker Compose File
+
+Before starting containers, check whether the YAML file is valid.
+
+Execute:
+
+```bash
+docker compose config
+```
+
+Expected output:
+
+Docker Compose displays the validated configuration.
+
+If there are indentation or syntax errors, correct them.
+
+**Remember:** YAML is indentation-sensitive. Use spaces, not tabs.
+
+---
+
+# STEP 6: Start Both Containers Using Docker Compose
+
+Now execute:
+
+```bash
+docker compose up -d
+```
+
+### Explanation
+
+| Command | Meaning |
+|---|---|
+| `docker compose` | Executes Docker Compose |
+| `up` | Creates and starts services |
+| `-d` | Runs containers in background |
+
+Docker Compose automatically:
+
+1. Creates the Docker network.
+2. Creates the web application container.
+3. Creates the Nagios container.
+4. Connects both containers to the network.
+5. Starts both services.
+
+Expected output (wording may vary):
+
+```text
+[+] Running 3/3
+ ✔ Network nagios-compose_olms-network Created
+ ✔ Container olms-web Started
+ ✔ Container olms-nagios Started
+```
+
+---
+
+# STEP 7: Verify Running Containers
+
+Execute:
+
+```bash
+docker ps
+```
+
+Expected output:
+
+```text
+CONTAINER ID   IMAGE                       STATUS
+xxxxxx         nginx:alpine                Up
+xxxxxx         jasonrivers/nagios:latest   Up
+```
+
+You should see two running containers.
+
+### Check container logs
+
+Web application:
+
+```bash
+docker logs olms-web
+```
+
+Nagios:
+
+```bash
+docker logs olms-nagios
+```
+
+These commands help identify errors during startup.
+
+---
+
+# STEP 8: Access Web Application Through Browser
+
+Open Google Chrome.
+
+Enter:
+
+```text
+http://localhost:8081
+```
+
+Expected output:
+
+**Welcome to nginx!**
+
+This confirms that the web application is running successfully.
+
+---
+
+# STEP 9: Access Nagios Monitoring Interface
+
+Open another browser tab.
+
+Enter:
+
+```text
+http://localhost:8080
+```
+
+Nagios login page should appear.
+
+### Default Login Credentials
+
+According to the Docker Hub image documentation:
+
+| Field | Value |
+|---|---|
+| Username | nagiosadmin |
+| Password | nagios |
+
+Enter these credentials.
+
+You should see the Nagios dashboard.
+
+
+
+**Important:** These are default demonstration credentials. Change them before using the system in a real deployment.
+
+---
+
+# STEP 10: Verify Docker Network
+
+Execute:
+
+```bash
+docker network ls
+```
+
+You should see a network similar to:
+
+```text
+nagios-compose_olms-network
+```
+
+Inspect the network:
+
+```bash
+docker network inspect nagios-compose_olms-network
+```
+
+You should find both:
+
+```text
+olms-web
+olms-nagios
+```
+
+This confirms that both containers are connected to the same network.
+
+### How can Nagios communicate with the web application?
+
+The web application can be reached internally using:
+
+```text
+http://web:80
+```
+
+Here:
+- `web` = Docker Compose service name.
+- `80` = Nginx container port.
+
+The service name is resolved automatically through Docker's internal DNS.
+
+---
+
+# STEP 11: Configure Nagios to Monitor the Web Application (Additional)
+
+For a complete monitoring demonstration, Nagios must have a check for Nginx.
+
+The web application is reachable internally at:
+
+```text
+http://web:80
+```
+
+Nagios can use a plugin such as `check_http` to check whether the web server responds successfully.
+
+A Nagios service configuration can look like this:
+
+```text
+define host {
+    use             linux-server
+    host_name       web
+    alias           OLMS Web Application
+    address         web
+}
+
+define service {
+    use                     generic-service
+    host_name               web
+    service_description     HTTP Monitoring
+    check_command           check_http!-p 80
+}
+```
+
+Save this in the appropriate Nagios configuration directory and ensure the configuration is included in `nagios.cfg`.
+
+The image stores its Nagios configuration under:
+
+```text
+/opt/nagios/etc
+```
+
+After updating the configuration, validate and reload Nagios.
+
+**Note:** This is an additional configuration step. The two-container deployment works without it, but the actual HTTP monitoring check will not appear automatically.
+
+---
+
+# STEP 12: Important Docker Compose Commands
+
+These commands are very important for your practical examination.
+
+| Command | Purpose |
+|---|---|
+| `docker compose up -d` | Start all services |
+| `docker compose down` | Stop and remove containers and project network |
+| `docker compose ps` | Display running services |
+| `docker compose images` | Display service images |
+| `docker compose logs` | Display logs |
+| `docker compose logs web` | Display web logs |
+| `docker compose logs nagios` | Display Nagios logs |
+| `docker compose restart` | Restart services |
+| `docker compose stop` | Stop services |
+| `docker compose start` | Start stopped services |
+| `docker compose config` | Validate configuration |
+| `docker compose pull` | Pull service images |
+| `docker compose up -d --build` | Build and start services |
+
+### To stop containers:
+
+```bash
+docker compose stop
+```
+
+### To restart:
+
+```bash
+docker compose restart
+```
+
+### To remove containers and network:
+
+```bash
+docker compose down
+```
+
+**Important:** `docker compose down` does not delete downloaded Docker images.
+
+---
+
+# STEP 13: Expected Final Output
+
+You should demonstrate these three things to your examiner.
+
+### Output 1: Docker Containers
+
+```bash
+docker compose ps
+```
+
+Expected:
+
+```text
+NAME          SERVICE   STATUS
+olms-web      web       Up
+olms-nagios   nagios    Up
+```
+
+### Output 2: Web Application
+
+Browser:
+
+```text
+http://localhost:8081
+```
+
+Expected:
+
+```text
+Welcome to nginx!
+```
+
+### Output 3: Nagios Dashboard
+
+Browser:
+
+```text
+http://localhost:8080
+```
+
+Expected:
+
+Nagios login page and monitoring dashboard.
+
+---
+
+# Viva Questions and Answers
+
+## A. Docker Compose Basics
+
+**1. What is Docker Compose?**
+
+Docker Compose is a tool used to define and manage multiple Docker containers using a single YAML configuration file.
+
+**2. What is docker-compose.yml?**
+
+It is a YAML file that defines services, images, ports, networks, volumes and other container configurations.
+
+**3. Why do we use Docker Compose?**
+
+To manage multiple containers easily using a single command.
+
+**4. What is a service in Docker Compose?**
+
+A service defines how a container should be created and configured.
+
+**5. What is the difference between Docker and Docker Compose?**
+
+- Docker manages individual containers and images.
+- Docker Compose manages multiple related containers together.
+
+**6. What is the purpose of `docker compose up -d`?**
+
+It creates and starts all services in detached mode.
+
+**7. What is detached mode?**
+
+It runs containers in the background without occupying the terminal.
+
+**8. What is the purpose of `depends_on`?**
+
+It controls service startup order. By itself, it does not guarantee that a service is ready to accept connections.
+
+**9. What is a YAML file?**
+
+YAML stands for YAML Ain't Markup Language. It is a human-readable data serialization format.
+
+**10. Why is indentation important in YAML?**
+
+Indentation defines the structure and hierarchy of configuration elements.
+
+## B. Nagios Questions
+
+**11. What is Nagios?**
+
+Nagios is an open-source monitoring tool used to monitor servers, network devices, applications and services.
+
+**12. Why do we use Nagios?**
+
+To identify system failures, monitor availability and detect performance-related issues.
+
+**13. What is Nagios Core?**
+
+Nagios Core is the main monitoring engine of Nagios.
+
+**14. What can Nagios monitor?**
+
+- Server availability.
+- CPU usage.
+- Memory usage.
+- Disk space.
+- Network services.
+- Web applications.
+
+**15. What are Nagios plugins?**
+
+Plugins are executable programs used to check different system resources and services.
+
+**16. What is the default Nagios web port in our experiment?**
+
+Container port 80, mapped to host port 8080.
+
+**17. What are the default Nagios login credentials for this image?**
+
+Username: `nagiosadmin`
+
+Password: `nagios`
+
+**18. What happens if the web application goes down?**
+
+If a suitable monitoring check is configured, Nagios detects the failure and reports the service as critical or unavailable.
+
+## C. Networking Questions
+
+**19. What is a Docker network?**
+
+A Docker network enables communication between containers.
+
+**20. What is a bridge network?**
+
+A bridge network allows containers on the same Docker network to communicate.
+
+**21. Can two containers communicate without exposing ports to the host?**
+
+Yes. Containers on the same Docker network can communicate using their internal ports.
+
+**22. What is port mapping?**
+
+Port mapping connects a host port to a container port.
+
+Example:
+
+```yaml
+ports:
+  - "8081:80"
+```
+
+**23. What is the difference between host port and container port?**
+
+- Host port: Port accessed from the browser or host machine.
+- Container port: Port on which the application listens inside the container.
+
+**24. How do containers communicate in Docker Compose?**
+
+They communicate using service names through the Docker network.
+
+**25. What happens if one container stops?**
+
+The other container can continue running independently, but functionality that depends on the stopped container may fail.
+
+---
+
+# Important Troubleshooting
+
+| Problem | Solution |
+|---|---|
+| Docker Engine not running | Start Docker Desktop |
+| Port 8080 already in use | Change host port to 8082 |
+| Port 8081 already in use | Change host port to 8083 |
+| Nagios page not opening | Check `docker logs olms-nagios` |
+| Nginx page not opening | Check `docker logs olms-web` |
+| Container exits | Check logs and container status |
+| YAML error | Check indentation and syntax |
+| Nagios cannot monitor web | Check network and Nagios service configuration |
+
+### Example: If port 8080 is already occupied
+
+Change:
+
+```yaml
+ports:
+  - "8080:80"
+```
+
+To:
+
+```yaml
+ports:
+  - "8082:80"
+```
+
+Then execute:
+
+```bash
+docker compose up -d
+```
+
+Access Nagios using:
+
+```text
+http://localhost:8082
+```
+
+---
+
+# Final Revision: Commands to Remember
+
+These are the most important commands for your examination.
+
+```bash
+# 1. Check Docker
+docker --version
+
+# 2. Check Docker Compose
+docker compose version
+
+# 3. Pull web image
+docker pull nginx:alpine
+
+# 4. Pull Nagios image
+docker pull jasonrivers/nagios:latest
+
+# 5. Validate compose file
+docker compose config
+
+# 6. Start both containers
+docker compose up -d
+
+# 7. Check running containers
+docker compose ps
+
+# 8. Check all logs
+docker compose logs
+
+# 9. Inspect Docker network
+docker network ls
+
+# 10. Restart containers
+docker compose restart
+
+# 11. Stop containers
+docker compose stop
+
+# 12. Remove containers and network
+docker compose down
+```
+
+### Browser URLs
+
+| Application | URL |
+|---|---|
+| Web application | `http://localhost:8081` |
+| Nagios dashboard | `http://localhost:8080` |
+
+### Official References
+
+- [Docker Compose Documentation](https://docs.docker.com/compose?utm_source=chatgpt.com)
+- [Nagios Docker Hub Image](https://hub.docker.com/r/jasonrivers/nagios/?utm_source=chatgpt.com)
+- [Docker Compose Networking](https://docs.docker.com/compose/how-tos/networking?utm_source=chatgpt.com)
+
+---
+
+⭐ **My exam tip:** For this 25-mark question, the most important part is writing the correct `docker-compose.yml` file and successfully running both services using:
+
+```bash
+docker compose up -d
+```
+
+Make sure you demonstrate both browser outputs. Also remember that **Docker Compose manages containers, whereas Nagios monitors the availability and health of services.** 
+
+Hey Triveni! 💗 This practical is easier than the previous ones. Here we use **Flask + Nginx**, not Tomcat or WordPress.
+
+Let's prepare all five subquestions (a–e). Since they ask almost the same thing, we'll create one complete working Docker Compose application that covers all five.
+
+# Docker Compose – Flask API and Nginx (25 Marks)
+
+## 1. Understand the Architecture
+
+We need two separate containers.
+
+
+
+| Service | Technology | Port |
+|---|---|---|
+| Backend | Flask | 5000 |
+| Frontend/Web Server | Nginx | 80 |
+
+### How does it work?
+
+1. User opens the website using a browser.
+2. Nginx receives the request on port 80.
+3. Nginx serves the frontend.
+4. For API requests, Nginx forwards requests to Flask.
+5. Flask processes the request and returns a response.
+
+**Remember:**
+- Flask = Backend.
+- Nginx = Web server / Reverse proxy.
+- Docker Compose = Manages both containers.
+
+---
+
+# STEP 1: Open Docker Desktop
+
+1. Open Docker Desktop.
+2. Wait until Docker Engine starts.
+3. Open VS Code.
+4. Open Terminal → PowerShell.
+
+Check Docker:
+
+```bash
+docker --version
+```
+
+Check Docker Compose:
+
+```bash
+docker compose version
+```
+
+---
+
+# STEP 2: Create Project Folder
+
+Execute:
+
+```bash
+mkdir flask-nginx
+cd flask-nginx
+```
+
+Open the folder:
+
+```bash
+code .
+```
+
+Create the following files:
+
+```text
+flask-nginx/
+│
+├── docker-compose.yml
+│
+├── app/
+│   ├── Dockerfile
+│   ├── app.py
+│   └── requirements.txt
+│
+└── nginx/
+    └── nginx.conf
+```
+
+Let's create each file.
+
+---
+
+# STEP 3: Create Flask Application
+
+Inside the `app` folder, create `app.py`.
+
+Write:
+
+```python
+from flask import Flask, jsonify
+
+app = Flask(__name__)
+
+@app.route('/')
+def home():
+    return "Welcome to Food Ordering Application!"
+
+@app.route('/api')
+def api():
+    return jsonify({
+        "message": "Flask API is working!",
+        "status": "success"
+    })
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000)
+```
+
+### Explanation
+
+| Code | Purpose |
+|---|---|
+| `Flask(__name__)` | Creates Flask application |
+| `@app.route('/')` | Defines home page |
+| `@app.route('/api')` | Defines API endpoint |
+| `jsonify()` | Returns JSON response |
+| `host='0.0.0.0'` | Makes Flask accessible outside its container |
+| `port=5000` | Runs Flask on port 5000 |
+
+**Important:** `0.0.0.0` is necessary. Otherwise, Flask may only accept connections from inside its own container.
+
+---
+
+# STEP 4: Create requirements.txt
+
+Inside the `app` folder, create:
+
+`requirements.txt`
+
+Write:
+
+```text
+Flask
+```
+
+This file specifies the Python dependency required by our application.
+
+---
+
+# STEP 5: Create Dockerfile
+
+Inside the `app` folder, create a file named:
+
+`Dockerfile`
+
+Write:
+
+```dockerfile
+FROM python:3.11-slim
+
+WORKDIR /app
+
+COPY requirements.txt .
+
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY app.py .
+
+EXPOSE 5000
+
+CMD ["python", "app.py"]
+```
+
+### Explanation
+
+| Instruction | Purpose |
+|---|---|
+| `FROM` | Specifies the base image |
+| `WORKDIR` | Sets working directory |
+| `COPY` | Copies application files |
+| `RUN` | Installs Flask |
+| `EXPOSE` | Documents application port |
+| `CMD` | Starts Flask application |
+
+**Remember:** Dockerfile builds the Flask image.
+
+---
+
+# STEP 6: Configure Nginx
+
+Inside the `nginx` folder, create:
+
+`nginx.conf`
+
+Write:
+
+```nginx
+server {
+    listen 80;
+
+    location / {
+        default_type text/plain;
+        return 200 "Welcome to Food Ordering Website!";
+    }
+
+    location /api {
+        proxy_pass http://flask:5000/api;
+
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+}
+```
+
+### Explanation
+
+**1. Listen on port 80**
+
+```nginx
+listen 80;
+```
+
+Nginx receives HTTP requests on port 80.
+
+**2. Website**
+
+```nginx
+location / {
+    return 200 "Welcome to Food Ordering Website!";
+}
+```
+
+Displays the restaurant website welcome message.
+
+**3. Connect to Flask**
+
+```nginx
+proxy_pass http://flask:5000/api;
+```
+
+Forwards API requests to the Flask container.
+
+Here:
+- `flask` = Docker Compose service name.
+- `5000` = Flask container port.
+- `/api` = Flask API endpoint.
+
+---
+
+# STEP 7: Create docker-compose.yml
+
+This is the **MOST IMPORTANT STEP** for your examination.
+
+Go to the main project folder.
+
+Create:
+
+`docker-compose.yml`
+
+Write the following:
+
+```yaml
+services:
+
+  flask:
+    build: ./app
+    container_name: flask-backend
+
+    ports:
+      - "5000:5000"
+
+    networks:
+      - food-network
+
+    restart: always
+
+  nginx:
+    image: nginx:alpine
+    container_name: nginx-server
+
+    ports:
+      - "80:80"
+
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+
+    depends_on:
+      - flask
+
+    networks:
+      - food-network
+
+    restart: always
+
+networks:
+  food-network:
+    driver: bridge
+```
+
+Save the file.
+
+## Understand Every Line
+
+### 1. Services
+
+```yaml
+services:
+```
+
+Defines the containers.
+
+### 2. Flask service
+
+```yaml
+flask:
+  build: ./app
+```
+
+Builds the Flask Docker image using the Dockerfile inside the `app` folder.
+
+### 3. Flask port mapping
+
+```yaml
+ports:
+  - "5000:5000"
+```
+
+| Port | Meaning |
+|---|---|
+| 5000 (left) | Host port |
+| 5000 (right) | Container port |
+
+### 4. Nginx service
+
+```yaml
+nginx:
+  image: nginx:alpine
+```
+
+Uses the lightweight Nginx Docker image.
+
+### 5. Nginx port mapping
+
+```yaml
+ports:
+  - "80:80"
+```
+
+| Port | Meaning |
+|---|---|
+| 80 (left) | Host port |
+| 80 (right) | Container port |
+
+### 6. Volumes
+
+```yaml
+volumes:
+  - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+```
+
+Mounts our Nginx configuration file inside the container.
+
+`ro` means read-only.
+
+### 7. depends_on
+
+```yaml
+depends_on:
+  - flask
+```
+
+Starts Flask before Nginx.
+
+Remember: Basic `depends_on` controls startup order but does not guarantee Flask is ready to accept requests.
+
+### 8. Network
+
+```yaml
+networks:
+  - food-network
+```
+
+Connects both containers to the same Docker network.
+
+### 9. Restart
+
+```yaml
+restart: always
+```
+
+Automatically restarts the container when it stops.
+
+---
+
+# STEP 8: Build and Start Containers
+
+Now execute these commands in the main project folder.
+
+### 1. Validate Docker Compose file
+
+```bash
+docker compose config
+```
+
+This checks whether the YAML configuration is valid.
+
+### 2. Build Flask image
+
+```bash
+docker compose build
+```
+
+Docker builds the Flask image using our Dockerfile.
+
+### 3. Start both containers
+
+```bash
+docker compose up -d
+```
+
+**What happens?**
+
+1. Flask image is built.
+2. Nginx image is downloaded.
+3. Docker network is created.
+4. Flask container is created.
+5. Nginx container is created.
+6. Both containers start.
+
+Expected output (names may vary):
+
+```text
+[+] Running 3/3
+ ✔ Network flask-nginx_food-network Created
+ ✔ Container flask-backend Started
+ ✔ Container nginx-server Started
+```
+
+---
+
+# STEP 9: Verify Running Containers
+
+Execute:
+
+```bash
+docker ps
+```
+
+Expected:
+
+| Container | Image | Status |
+|---|---|---|
+| flask-backend | Python-based custom image | Up |
+| nginx-server | nginx:alpine | Up |
+
+Check Flask logs:
+
+```bash
+docker logs flask-backend
+```
+
+Check Nginx logs:
+
+```bash
+docker logs nginx-server
+```
+
+---
+
+# STEP 10: Access Applications Through Browser
+
+This is the most important expected output.
+
+### 1. Access Flask directly
+
+Open Chrome:
+
+```text
+http://localhost:5000
+```
+
+Expected output:
+
+```text
+Welcome to Food Ordering Application!
+```
+
+### 2. Access Flask API directly
+
+```text
+http://localhost:5000/api
+```
+
+Expected JSON:
+
+```json
+{
+  "message": "Flask API is working!",
+  "status": "success"
+}
+```
+
+### 3. Access Nginx website
+
+```text
+http://localhost
+```
+
+Expected output:
+
+```text
+Welcome to Food Ordering Website!
+```
+
+### 4. Access Flask API through Nginx
+
+```text
+http://localhost/api
+```
+
+Expected output:
+
+```json
+{
+  "message": "Flask API is working!",
+  "status": "success"
+}
+```
+
+Congratulations! Both containers are running independently and communicating through Docker networking. 🎉
+
+---
+
+# STEP 11: Important Docker Compose Commands
+
+| Command | Purpose |
+|---|---|
+| `docker compose up -d` | Start containers |
+| `docker compose down` | Stop and remove containers |
+| `docker compose ps` | Show running services |
+| `docker compose build` | Build images |
+| `docker compose logs` | Display logs |
+| `docker compose restart` | Restart services |
+| `docker compose stop` | Stop services |
+| `docker compose start` | Start stopped services |
+| `docker compose config` | Validate YAML |
+| `docker compose pull` | Download images |
+| `docker images` | List images |
+| `docker ps -a` | List all containers |
+
+### To stop:
+
+```bash
+docker compose stop
+```
+
+### To restart:
+
+```bash
+docker compose restart
+```
+
+### To remove:
+
+```bash
+docker compose down
+```
+
+---
+
+# STEP 12: Scenario-Based Viva Questions
+
+### 1. What is Flask?
+
+Flask is a lightweight Python web framework used to develop web applications and REST APIs.
+
+### 2. What is Nginx?
+
+Nginx is a web server that can also work as a reverse proxy and load balancer.
+
+### 3. Why do we use Flask and Nginx separately?
+
+Flask handles backend operations, while Nginx handles HTTP requests and serves frontend content.
+
+### 4. What is the default Flask port?
+
+5000.
+
+### 5. What is the default Nginx port?
+
+80.
+
+### 6. What is reverse proxy?
+
+A reverse proxy receives client requests and forwards them to backend servers.
+
+### 7. How do Flask and Nginx communicate?
+
+Through a common Docker network using the Flask service name.
+
+Example:
+
+```text
+http://flask:5000
+```
+
+### 8. Why do we use `depends_on`?
+
+To control the startup order of services.
+
+### 9. What is the purpose of Dockerfile?
+
+It contains instructions to build a Docker image.
+
+### 10. What is the purpose of `build: ./app`?
+
+It tells Docker Compose to build an image using the Dockerfile in the `app` directory.
+
+### 11. What is port mapping?
+
+It connects a host machine port to a container port.
+
+Example:
+
+```yaml
+ports:
+  - "5000:5000"
+```
+
+### 12. What happens if Flask stops?
+
+Nginx can continue running, but requests forwarded to Flask will fail until the backend becomes available again.
+
+### 13. What is the purpose of a Docker network?
+
+It enables communication between containers.
+
+### 14. What is the difference between image and container?
+
+- Image: Template used to create containers.
+- Container: Running instance of an image.
+
+### 15. Can two containers run on the same Docker host?
+
+Yes. Docker supports multiple containers on the same host.
+
+---
+
+# STEP 13: Troubleshooting
+
+| Problem | Solution |
+|---|---|
+| Port 5000 already occupied | Change host port to 5001 |
+| Port 80 already occupied | Change host port to 8081 |
+| Flask not starting | Check `docker logs flask-backend` |
+| Nginx not starting | Check `docker logs nginx-server` |
+| Nginx gives 502 Bad Gateway | Check Flask container and network |
+| YAML error | Correct indentation |
+| Docker not running | Start Docker Desktop |
+
+**Example: Port conflict**
+
+If port 80 is already occupied, change:
+
+```yaml
+ports:
+  - "80:80"
+```
+
+To:
+
+```yaml
+ports:
+  - "8081:80"
+```
+
+Now access:
+
+```text
+http://localhost:8081
+```
+
+---
+
+# FINAL EXAM REVISION ⭐
+
+## What to use?
+
+| Requirement | Technology |
+|---|---|
+| Backend API | Flask |
+| Web server | Nginx |
+| Backend language | Python |
+| Container management | Docker Compose |
+| Backend port | 5000 |
+| Web server port | 80 |
+| Communication | Docker bridge network |
+| Configuration | docker-compose.yml |
+| Backend image creation | Dockerfile |
+
+## Most Important Commands
+
+```bash
+# 1. Create project folder
+mkdir flask-nginx
+
+# 2. Enter project
+cd flask-nginx
+
+# 3. Validate configuration
+docker compose config
+
+# 4. Build Flask image
+docker compose build
+
+# 5. Start both containers
+docker compose up -d
+
+# 6. Check containers
+docker compose ps
+
+# 7. Check logs
+docker compose logs
+
+# 8. Stop containers
+docker compose stop
+
+# 9. Remove containers
+docker compose down
+```
+
+## Expected Browser Output
+
+| URL | Expected Result |
+|---|---|
+| `http://localhost:5000` | Flask welcome message |
+| `http://localhost:5000/api` | Flask JSON response |
+| `http://localhost` | Nginx website |
+| `http://localhost/api` | Flask API through Nginx |
+
+**💗 Exam tip:** Parts (a), (b), (c), (d) and (e) are variations of the same question. Prepare the complete `docker-compose.yml` from part (e), understand port mapping and service networking, and you can answer all five.
+
+**Remember:** Flask = 5000, Nginx = 80. Unlike WordPress, this practical requires a Dockerfile to build the Flask application.
