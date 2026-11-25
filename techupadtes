@@ -1,0 +1,370 @@
+services:
+
+  wordpress:
+    image: wordpress:latest
+    container_name: mywordpress
+    ports:
+      - "8080:80"
+    environment:
+      WORDPRESS_DB_HOST: db:3306
+      WORDPRESS_DB_USER: wordpress
+      WORDPRESS_DB_PASSWORD: root123
+      WORDPRESS_DB_NAME: wordpressdb
+    depends_on:
+      - db
+
+  db:
+    image: mysql:8.0
+    container_name: mymysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root123
+      MYSQL_DATABASE: wordpressdb
+      MYSQL_USER: wordpress
+      MYSQL_PASSWORD: root123
+    volumes:
+      - db_data:/var/lib/mysql
+
+volumes:
+  db_data:
+
+
+
+services:
+
+  tomcat:
+    image: tomcat:10.1
+    container_name: mytomcat
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db
+
+  db:
+    image: mysql:8.0
+    container_name: mysql-db
+    environment:
+      MYSQL_ROOT_PASSWORD: root123
+      MYSQL_DATABASE: studentdb
+      MYSQL_USER: student
+      MYSQL_PASSWORD: student123
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+volumes:
+  mysql_data:
+
+
+
+docker exec -it mysql-db mysql -u root -p
+
+
+services:
+
+  nginx:
+    image: nginx:latest
+    container_name: mynginx
+    ports:
+      - "80:80"
+    depends_on:
+      - tomcat
+
+  tomcat:
+    image: tomcat:10.1
+    container_name: mytomcat
+    expose:
+      - "8080"
+    depends_on:
+      - db
+
+  db:
+    image: mysql:8.0
+    container_name: mysql-db
+    environment:
+      MYSQL_ROOT_PASSWORD: root123
+      MYSQL_DATABASE: studentdb
+      MYSQL_USER: student
+      MYSQL_PASSWORD: student123
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+volumes:
+  mysql_data:
+
+
+
+services:
+
+  nginx:
+    image: nginx:latest
+    container_name: mynginx
+    ports:
+      - "8081:80"
+
+  tomcat:
+    image: tomcat:10.1
+    container_name: mytomcat
+    ports:
+      - "8080:8080"
+
+  db:
+    image: mysql:8.0
+    container_name: mysql-db
+    environment:
+      MYSQL_ROOT_PASSWORD: root123
+      MYSQL_DATABASE: studentdb
+      MYSQL_USER: student
+      MYSQL_PASSWORD: student123
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+volumes:
+  mysql_data:
+
+
+
+services:
+  nginx:
+    image: nginx:latest
+    container_name: mynginx
+    ports:
+      - "8085:80"
+
+  tomcat:
+    image: tomcat:10.1
+    container_name: mytomcat
+    ports:
+      - "8086:8080"
+
+  db:
+    image: mysql:8.0
+    container_name: mysql-db
+    environment:
+      MYSQL_ROOT_PASSWORD: root123
+      MYSQL_DATABASE: studentdb
+      MYSQL_USER: student
+      MYSQL_PASSWORD: student123
+    ports:
+      - "3308:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+volumes:
+  mysql_data:
+
+docker exec -it mysql-db mysql -u root -p
+
+
+
+## Docker Compose YAML – Nginx + Tomcat + MySQL (Without Reverse Proxy)
+
+We will run three independent containers using Docker Compose.
+
+1. **Nginx** – Web server.
+2. **Tomcat** – Java application server.
+3. **MySQL** – Database server.
+
+### 1. Create project folder
+
+```powershell
+mkdir NginxTomcatDB
+cd NginxTomcatDB
+```
+
+### 2. Create `compose.yaml`
+
+```powershell
+notepad compose.yaml
+```
+
+Paste this YAML:
+
+services:
+
+  nginx:
+    image: nginx:latest
+    container_name: mynginx
+    ports:
+      - "8081:80"
+
+  tomcat:
+    image: tomcat:10.1
+    container_name: mytomcat
+    ports:
+      - "8080:8080"
+
+  db:
+    image: mysql:8.0
+    container_name: mysql-db
+    environment:
+      MYSQL_ROOT_PASSWORD: root123
+      MYSQL_DATABASE: studentdb
+      MYSQL_USER: student
+      MYSQL_PASSWORD: student123
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+volumes:
+  mysql_data:
+
+### 3. Explanation
+
+| Instruction | Meaning |
+|---|---|
+| `services` | Defines all containers. |
+| `nginx` | Nginx service. |
+| `image: nginx:latest` | Downloads Nginx image. |
+| `container_name` | Assigns a container name. |
+| `8081:80` | Host port 8081 maps to Nginx port 80. |
+| `tomcat` | Tomcat service. |
+| `8080:8080` | Host port 8080 maps to Tomcat port 8080. |
+| `db` | MySQL service. |
+| `MYSQL_ROOT_PASSWORD` | Sets root password. |
+| `MYSQL_DATABASE` | Creates `studentdb`. |
+| `MYSQL_USER` | Creates database user. |
+| `MYSQL_PASSWORD` | Sets user password. |
+| `3307:3306` | Host port 3307 maps to MySQL port 3306. |
+| `mysql_data` | Stores database data persistently. |
+
+### 4. Run Docker Compose
+
+**Download images:**
+
+```bash
+docker compose pull
+```
+
+**Start all three containers:**
+
+```bash
+docker compose up -d
+```
+
+**Check running containers:**
+
+```bash
+docker compose ps
+```
+
+**View logs:**
+
+```bash
+docker compose logs
+```
+
+### 5. Access services
+
+| Service | Browser / Connection |
+|---|---|
+| Nginx | `http://localhost:8081` |
+| Tomcat | `http://localhost:8080` |
+| MySQL | `localhost:3307` |
+
+Note: Tomcat's default image may not contain the ROOT welcome application, so its browser page may show 404. MySQL is accessed using a database client or terminal.
+
+### 6. Access MySQL
+
+```bash
+docker exec -it mysql-db mysql -u root -p
+```
+
+Password:
+
+```text
+root123
+```
+
+Execute SQL:
+
+```sql
+SHOW DATABASES;
+
+USE studentdb;
+
+CREATE TABLE students (
+    id INT PRIMARY KEY,
+    name VARCHAR(50),
+    department VARCHAR(30)
+);
+
+INSERT INTO students VALUES
+(1, 'Triveni', 'CSE'),
+(2, 'Shivani', 'CSE');
+
+SELECT * FROM students;
+```
+
+Exit:
+
+```sql
+EXIT;
+```
+
+### 7. Stop and remove containers
+
+Stop:
+
+```bash
+docker compose stop
+```
+
+Start:
+
+```bash
+docker compose start
+```
+
+Remove containers and network:
+
+```bash
+docker compose down
+```
+
+Remove containers, network and database volume:
+
+```bash
+docker compose down -v
+```
+
+⚠️ `-v` deletes the saved database data.
+
+### 8. Architecture
+
+```text
+             USER / BROWSER
+                    |
+          +---------+---------+
+          |         |         |
+          v         v         v
+       NGINX      TOMCAT     MYSQL
+       :8081      :8080      :3307
+          |         |         |
+          v         v         v
+       Web       Java App   Database
+       Server    Server     studentdb
+```
+
+**Important:** All three services are independent. Nginx is not configured to forward requests to Tomcat, and Tomcat is not automatically connected to MySQL. A Java application needs JDBC configuration and the MySQL driver to connect to the database.
+
+
+
+
+1. mkdir NginxDemo
+2. cd NginxDemo
+3. Create index.html
+4. Create Dockerfile
+5. docker build -t mynginx:v1 .
+6. docker images
+7. docker run -d -p 8080:80 --name nginx-container mynginx:v1
+8. docker ps
+9. Open localhost:8080
+10. docker stop nginx-container
+11. docker rm nginx-container
+12. docker rmi mynginx:v1
