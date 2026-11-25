@@ -1,0 +1,920 @@
+https://github.com/haleema91/webmvn
+https://github.com/haleema91/javacseh.git
+https://github.com/haleema91/cs-e34.git(web)
+
+<?xml version="1.0" encoding="UTF-8"?>
+
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+         https://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <!-- Maven Model Version -->
+    <modelVersion>4.0.0</modelVersion>
+
+    <!-- Project Information -->
+    <groupId>com.example</groupId>
+    <artifactId>MyJavaApp</artifactId>
+    <version>1.0-SNAPSHOT</version>
+
+    <!-- Packaging Type -->
+    <packaging>jar</packaging>
+
+    <!-- Properties -->
+    <properties>
+        <maven.compiler.release>21</maven.compiler.release>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+
+    <!-- Dependencies -->
+    <dependencies>
+
+        <!-- JUnit Testing Dependency -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>5.10.2</version>
+            <scope>test</scope>
+        </dependency>
+
+    </dependencies>
+
+    <!-- Build Plugins -->
+    <build>
+        <plugins>
+
+            <!-- Compiler Plugin -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.13.0</version>
+            </plugin>
+
+            <!-- Surefire Plugin -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.5.2</version>
+            </plugin>
+
+            <!-- JAR Plugin -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>3.4.2</version>
+
+                <configuration>
+                    <archive>
+                        <manifest>
+                            <mainClass>com.example.App</mainClass>
+                        </manifest>
+                    </archive>
+                </configuration>
+            </plugin>
+
+        </plugins>
+    </build>
+
+</project>
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+         https://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <!-- Project Information -->
+    <groupId>com.example</groupId>
+    <artifactId>ServletApp</artifactId>
+    <version>1.0-SNAPSHOT</version>
+
+    <!-- Packaging -->
+    <packaging>war</packaging>
+
+    <!-- Properties -->
+    <properties>
+        <maven.compiler.release>21</maven.compiler.release>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+
+    <!-- Dependencies -->
+    <dependencies>
+
+        <!-- Servlet API -->
+        <dependency>
+            <groupId>jakarta.servlet</groupId>
+            <artifactId>jakarta.servlet-api</artifactId>
+            <version>6.0.0</version>
+            <scope>provided</scope>
+        </dependency>
+
+    </dependencies>
+
+    <!-- Build Plugins -->
+    <build>
+        <plugins>
+
+            <!-- Compiler Plugin -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.13.0</version>
+            </plugin>
+
+            <!-- WAR Plugin -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-war-plugin</artifactId>
+                <version>3.4.0</version>
+            </plugin>
+
+        </plugins>
+    </build>
+
+</project>
+```
+package com.example;
+
+import java.io.*;
+import jakarta.servlet.*;
+import jakarta.servlet.http.*;
+import jakarta.servlet.annotation.*;
+
+@WebServlet("/hello")
+public class HelloServlet extends HttpServlet {
+
+    protected void doGet(HttpServletRequest request,
+                         HttpServletResponse response)
+                         throws IOException {
+
+        response.setContentType("text/html");
+
+        PrintWriter out = response.getWriter();
+
+        out.println("<h1>Hello from Java Servlet!</h1>");
+    }
+}
+
+
+<dependency>
+    <groupId>com.google.code.gson</groupId>
+    <artifactId>gson</artifactId>
+    <version>2.13.2</version>
+</dependency>
+
+
+import com.google.gson.Gson;
+
+public class Main {
+    public static void main(String[] args) {
+
+        Gson gson = new Gson();
+
+        Student s = new Student("Triveni", 20);
+
+        // Java object to JSON
+        String json = gson.toJson(s);
+
+        System.out.println(json);
+    }
+}
+
+class Student {
+    String name;
+    int age;
+
+    Student(String name, int age) {
+        this.name = name;
+        this.age = age;
+    }
+}
+
+
+
+
+java 
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+         https://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.example</groupId>
+    <artifactId>JavaApp</artifactId>
+    <version>1.0-SNAPSHOT</version>
+
+    <packaging>jar</packaging>
+
+    <properties>
+        <maven.compiler.release>21</maven.compiler.release>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+
+    <dependencies>
+
+        <!-- Gson Dependency -->
+        <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+            <version>2.13.2</version>
+        </dependency>
+
+        <!-- JUnit Dependency -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>5.10.2</version>
+            <scope>test</scope>
+        </dependency>
+
+    </dependencies>
+
+    <build>
+        <plugins>
+
+            <!-- Compiler Plugin -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.13.0</version>
+            </plugin>
+
+            <!-- Test Plugin -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.5.2</version>
+            </plugin>
+
+            <!-- JAR Plugin -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>3.4.2</version>
+                <configuration>
+                    <archive>
+                        <manifest>
+                            <mainClass>com.example.App</mainClass>
+                        </manifest>
+                    </archive>
+                </configuration>
+            </plugin>
+
+        </plugins>
+    </build>
+
+</project>
+```
+
+
+web 
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+         https://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.example</groupId>
+    <artifactId>WebApp</artifactId>
+    <version>1.0-SNAPSHOT</version>
+
+    <packaging>war</packaging>
+
+    <properties>
+        <maven.compiler.release>21</maven.compiler.release>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+
+    <dependencies>
+
+        <!-- Servlet API -->
+        <dependency>
+            <groupId>jakarta.servlet</groupId>
+            <artifactId>jakarta.servlet-api</artifactId>
+            <version>6.0.0</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- Gson Dependency -->
+        <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+            <version>2.13.2</version>
+        </dependency>
+
+    </dependencies>
+
+    <build>
+        <plugins>
+
+            <!-- Compiler Plugin -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.13.0</version>
+            </plugin>
+
+            <!-- WAR Plugin -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-war-plugin</artifactId>
+                <version>3.4.0</version>
+            </plugin>
+
+        </plugins>
+    </build>
+
+</project>
+```
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Docker Demo</title>
+</head>
+<body>
+    <h1>Hello from Docker!</h1>
+</body>
+</html>
+
+FROM nginx:latest
+
+WORKDIR /usr/share/nginx/html
+
+COPY index.html .
+
+EXPOSE 80
+
+CMD ["nginx", "-g", "daemon off;"]
+
+FROM redis:latest
+CMD ["redis-server"]
+
+
+mkdir redis-docker
+cd redis-docker
+FROM redis:latest
+
+WORKDIR /data
+
+EXPOSE 6379
+
+CMD ["redis-server"]
+# Create Dockerfile and add the Redis instructions
+
+docker build -t myredis:v1 .
+
+docker images
+
+docker run -d -p 6379:6379 --name redis-container myredis:v1
+
+docker ps
+
+docker exec -it redis-container redis-cli
+
+# Inside Redis CLI
+PING
+SET name "Triveni"
+GET name
+EXIT
+
+# Back in PowerShell
+docker stop redis-container
+docker rm redis-container
+docker rmi myredis:v1
+
+
+# Experiment 5 – Docker CLI Commands (Final Version) 🐳
+
+This is the consolidated practical guide covering Docker image creation, containers, networking, volumes, Docker Hub, troubleshooting and cleanup commands.
+
+# 1. Introduction to Docker
+
+**Docker:** A platform used to develop, package and run applications inside containers.
+
+**Docker Image:** A read-only template used to create containers.
+
+**Docker Container:** A running instance of a Docker image.
+
+**Dockerfile:** A text file containing instructions to build a Docker image.
+
+### Docker workflow
+
+```text
+Application
+    |
+    v
+Dockerfile
+    |
+    v
+Docker Image
+    |
+    v
+Docker Container
+    |
+    v
+Running Application
+```
+
+# 2. Creating a Docker Image Using Dockerfile
+
+Let's create a simple website using Nginx.
+
+### Step 1: Create a project directory
+
+```powershell
+mkdir DockerDemo
+cd DockerDemo
+```
+
+### Step 2: Create index.html
+
+```html
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Docker Demo</title>
+</head>
+<body>
+    <h1>Hello from Docker!</h1>
+    <p>My first Docker application.</p>
+</body>
+</html>
+```
+
+### Step 3: Create Dockerfile
+
+Create a file named `Dockerfile` without any extension.
+
+```dockerfile
+FROM nginx:latest
+
+WORKDIR /usr/share/nginx/html
+
+COPY index.html .
+
+EXPOSE 80
+
+CMD ["nginx", "-g", "daemon off;"]
+```
+
+### Explanation of Dockerfile instructions
+
+| Instruction | Purpose |
+|---|---|
+| `FROM` | Specifies the base image |
+| `WORKDIR` | Sets the working directory |
+| `COPY` | Copies files from host to image |
+| `ADD` | Copies files and can extract local archives |
+| `RUN` | Executes commands during image building |
+| `EXPOSE` | Documents the container port |
+| `ENV` | Defines environment variables |
+| `ARG` | Defines build-time variables |
+| `CMD` | Specifies the default runtime command |
+| `ENTRYPOINT` | Specifies the main executable |
+| `VOLUME` | Declares a mount point for persistent data |
+| `USER` | Sets the user |
+| `LABEL` | Adds metadata |
+| `HEALTHCHECK` | Checks container health |
+| `SHELL` | Changes the shell used by shell-form instructions |
+| `STOPSIGNAL` | Defines the signal used to stop the container |
+| `ONBUILD` | Defines an instruction executed when another image builds from this image |
+
+**Important differences:**
+
+- `RUN` – Executes during image building.
+- `CMD` – Executes when the container starts.
+- `COPY` – Copies files.
+- `FROM` – Selects the base image.
+
+### Step 4: Build the image
+
+```bash
+docker build -t myweb:v1 .
+```
+
+Explanation:
+
+- `docker build` – Creates an image.
+- `-t` – Assigns a name and tag.
+- `myweb` – Image name.
+- `v1` – Image version.
+- `.` – Current directory/build context.
+
+### Step 5: Verify image
+
+```bash
+docker images
+```
+
+### Step 6: Run a container
+
+```bash
+docker run -d -p 8080:80 --name mycontainer myweb:v1
+```
+
+Explanation:
+
+- `-d` – Runs in background.
+- `-p` – Maps ports.
+- `8080` – Host port.
+- `80` – Container port.
+- `--name` – Assigns container name.
+
+### Step 7: Check container
+
+```bash
+docker ps
+```
+
+### Step 8: Open browser
+
+```text
+http://localhost:8080
+```
+
+**Output:**
+
+Hello from Docker!
+
+---
+
+# 3. Docker Image Commands
+
+| Command | Purpose |
+|---|---|
+| `docker --version` | Displays Docker version |
+| `docker info` | Displays Docker system information |
+| `docker pull nginx` | Downloads an image |
+| `docker pull nginx:1.27` | Downloads a specific image version |
+| `docker images` | Lists images |
+| `docker image ls` | Lists images |
+| `docker build -t myweb:v1 .` | Creates an image |
+| `docker build --no-cache -t myweb:v1 .` | Builds without using cache |
+| `docker image inspect myweb:v1` | Displays image details |
+| `docker history myweb:v1` | Displays image build history |
+| `docker tag myweb:v1 myweb:v2` | Creates another image tag |
+| `docker rmi myweb:v1` | Removes an image |
+| `docker image rm myweb:v1` | Removes an image |
+| `docker image prune` | Removes dangling images |
+| `docker image prune -a` | Removes unused images |
+| `docker save -o myweb.tar myweb:v1` | Saves an image as TAR |
+| `docker load -i myweb.tar` | Loads an image from TAR |
+
+### Important command explanations
+
+**Build without cache:**
+
+```bash
+docker build --no-cache -t myweb:v1 .
+```
+
+Forces Docker to rebuild without using cached layers.
+
+**Inspect image:**
+
+```bash
+docker image inspect myweb:v1
+```
+
+Displays image ID, size, architecture and configuration.
+
+**Image history:**
+
+```bash
+docker history myweb:v1
+```
+
+Displays image layers and build history.
+
+**Tag image:**
+
+```bash
+docker tag myweb:v1 myweb:v2
+```
+
+Creates another tag pointing to the same image.
+
+**Save image:**
+
+```bash
+docker save -o myweb.tar myweb:v1
+```
+
+**Load image:**
+
+```bash
+docker load -i myweb.tar
+```
+
+---
+
+# 4. Docker Container Commands
+
+A container is an instance of an image.
+
+| Command | Purpose |
+|---|---|
+| `docker run nginx` | Creates and runs a container |
+| `docker run -d nginx` | Runs in background |
+| `docker run -d --name mynginx nginx` | Assigns a name |
+| `docker run -d -p 8080:80 nginx` | Maps ports |
+| `docker ps` | Lists running containers |
+| `docker ps -a` | Lists all containers |
+| `docker stop mynginx` | Stops a container |
+| `docker start mynginx` | Starts a stopped container |
+| `docker restart mynginx` | Restarts a container |
+| `docker pause mynginx` | Pauses a container |
+| `docker unpause mynginx` | Resumes a container |
+| `docker kill mynginx` | Immediately terminates a container |
+| `docker rm mynginx` | Removes a stopped container |
+| `docker rm -f mynginx` | Forcefully removes a container |
+| `docker rename mynginx webserver` | Renames a container |
+| `docker exec -it mynginx bash` | Opens Bash inside a container |
+| `docker exec -it mynginx sh` | Opens shell inside a container |
+| `docker logs mynginx` | Displays logs |
+| `docker logs -f mynginx` | Follows logs continuously |
+| `docker inspect mynginx` | Displays container details |
+| `docker stats` | Displays resource usage |
+| `docker cp index.html mynginx:/usr/share/nginx/html/` | Copies host file into container |
+| `docker cp mynginx:/usr/share/nginx/html/index.html .` | Copies container file to host |
+| `docker top mynginx` | Displays running processes |
+| `docker port mynginx` | Displays port mappings |
+| `docker diff mynginx` | Displays filesystem changes |
+
+### Important differences
+
+| Command | Meaning |
+|---|---|
+| `docker stop` | Gracefully stops a container |
+| `docker kill` | Immediately terminates a container |
+| `docker rm` | Removes a container |
+| `docker rmi` | Removes an image |
+| `docker run` | Creates and starts a new container |
+| `docker start` | Starts an existing stopped container |
+| `docker exec` | Executes a command inside a running container |
+
+---
+
+# 5. Docker Networking Commands
+
+Docker networking allows containers to communicate with each other and external networks.
+
+### Types of networks
+
+| Network | Purpose |
+|---|---|
+| Bridge | Connects containers on the same Docker host |
+| Host | Shares the host's network namespace |
+| None | Disables normal network connectivity |
+| Overlay | Connects containers across multiple Docker hosts |
+| Macvlan | Gives containers their own MAC addresses |
+
+### Networking commands
+
+| Command | Purpose |
+|---|---|
+| `docker network ls` | Lists networks |
+| `docker network create mynetwork` | Creates a network |
+| `docker network inspect mynetwork` | Displays network details |
+| `docker network connect mynetwork myweb` | Connects a container |
+| `docker network disconnect mynetwork myweb` | Disconnects a container |
+| `docker network rm mynetwork` | Removes a network |
+| `docker network prune` | Removes unused networks |
+| `docker run -d --network bridge nginx` | Uses bridge networking |
+| `docker run -d --network host nginx` | Uses host networking |
+| `docker run -d --network none nginx` | Runs without normal networking |
+
+**Example:**
+
+```bash
+docker network create mynetwork
+docker network ls
+docker network inspect mynetwork
+docker network connect mynetwork myweb
+docker network disconnect mynetwork myweb
+docker network rm mynetwork
+```
+
+---
+
+# 6. Docker Volume Commands
+
+Volumes are used to store data permanently, even if containers are deleted.
+
+**Example:** A database stores student records. If the container is removed, we want the records to remain safe.
+
+### Volume commands
+
+| Command | Purpose |
+|---|---|
+| `docker volume ls` | Lists volumes |
+| `docker volume create myvolume` | Creates a volume |
+| `docker volume inspect myvolume` | Displays volume details |
+| `docker volume rm myvolume` | Removes a volume |
+| `docker volume prune` | Removes unused volumes |
+
+### Create a volume
+
+```bash
+docker volume create myvolume
+```
+
+### Run a container using a volume
+
+```bash
+docker run -d --name mydb -v myvolume:/data nginx
+```
+
+Here:
+- `myvolume` – Volume name.
+- `/data` – Container directory.
+- `-v` – Mounts the volume.
+
+### Read-only volume
+
+```bash
+docker run -d --name readonly -v myvolume:/data:ro nginx
+```
+
+`ro` means read-only.
+
+### Modern mount syntax
+
+```bash
+docker run -d --name mydb --mount source=myvolume,target=/data nginx
+```
+
+---
+
+# 7. Docker Registry Commands
+
+A registry stores and distributes Docker images.
+
+Docker Hub is a popular public registry.
+
+| Command | Purpose |
+|---|---|
+| `docker login` | Logs into Docker Hub |
+| `docker logout` | Logs out |
+| `docker tag myweb:v1 username/myweb:v1` | Tags image for Docker Hub |
+| `docker push username/myweb:v1` | Uploads image |
+| `docker pull username/myweb:v1` | Downloads image |
+
+### Practical example
+
+**Step 1: Login**
+
+```bash
+docker login
+```
+
+**Step 2: Tag image**
+
+```bash
+docker tag myweb:v1 username/myweb:v1
+```
+
+Replace `username` with your Docker Hub username.
+
+**Step 3: Push image**
+
+```bash
+docker push username/myweb:v1
+```
+
+**Step 4: Pull image**
+
+```bash
+docker pull username/myweb:v1
+```
+
+---
+
+# 8. Docker Troubleshooting Commands
+
+These commands help identify and solve Docker problems.
+
+| Command | Purpose |
+|---|---|
+| `docker logs container_name` | Checks logs |
+| `docker inspect container_name` | Checks configuration |
+| `docker stats` | Checks resource usage |
+| `docker events` | Displays Docker events |
+| `docker top container_name` | Displays processes |
+| `docker port container_name` | Checks port mapping |
+| `docker system df` | Shows Docker disk usage |
+| `docker info` | Shows Docker system information |
+| `docker system prune` | Removes unused Docker resources |
+| `docker container prune` | Removes stopped containers |
+| `docker image prune` | Removes dangling images |
+| `docker network prune` | Removes unused networks |
+| `docker volume prune` | Removes unused volumes |
+
+### Additional commands
+
+**Check Docker events:**
+
+```bash
+docker events
+```
+
+**Check events from the last 10 minutes:**
+
+```bash
+docker events --since 10m
+```
+
+**Check Docker disk usage:**
+
+```bash
+docker system df
+```
+
+**Remove unused resources:**
+
+```bash
+docker system prune
+```
+
+**Remove all unused images and other unused resources:**
+
+```bash
+docker system prune -a
+```
+
+**Remove unused resources, including volumes:**
+
+```bash
+docker system prune -a --volumes
+```
+
+⚠️ Be careful: Cleanup commands can permanently delete data.
+
+---
+
+# 9. Additional Docker Commands
+
+| Command | Purpose |
+|---|---|
+| `docker attach container_name` | Attaches to the main process |
+| `docker wait container_name` | Waits until the container stops |
+| `docker update --restart=always container_name` | Updates restart policy |
+| `docker context ls` | Lists Docker contexts |
+| `docker compose version` | Checks Docker Compose version |
+| `docker version` | Displays client and server versions |
+
+### Docker restart policies
+
+| Policy | Meaning |
+|---|---|
+| `no` | Never automatically restarts |
+| `always` | Always restarts |
+| `unless-stopped` | Restarts unless manually stopped |
+| `on-failure` | Restarts if the container exits with an error |
+
+Example:
+
+```bash
+docker run -d --restart=always --name myweb nginx
+```
+
+---
+
+# 10. Complete Practical Execution
+
+Run these commands one by one in PowerShell.
+
+| Step | Command | Purpose |
+|---|---|---|
+| 1 | `docker --version` | Check Docker |
+| 2 | `mkdir DockerDemo` | Create folder |
+| 3 | `cd DockerDemo` | Enter folder |
+| 4 | Create `index.html` | Create webpage |
+| 5 | Create `Dockerfile` | Add build instructions |
+| 6 | `docker build -t myweb:v1 .` | Build image |
+| 7 | `docker images` | Verify image |
+| 8 | `docker run -d -p 8080:80 --name mycontainer myweb:v1` | Run container |
+| 9 | `docker ps` | Verify container |
+| 10 | `docker logs mycontainer` | View logs |
+| 11 | `docker inspect mycontainer` | Inspect container |
+| 12 | `docker stats mycontainer` | Check resources |
+| 13 | Open `localhost:8080` | View webpage |
+| 14 | `docker stop mycontainer` | Stop container |
+| 15 | `docker start mycontainer` | Start again |
+| 16 | `docker rm -f mycontainer` | Remove container |
+| 17 | `docker rmi myweb:v1` | Remove image |
+
+---
