@@ -368,3 +368,138 @@ docker compose down -v
 10. docker stop nginx-container
 11. docker rm nginx-container
 12. docker rmi mynginx:v1
+
+
+## Next: Nginx using Docker Compose
+
+Now we will run Nginx using a `compose.yaml` file instead of the `docker run` command.
+
+### 1. Create folder
+
+```powershell
+mkdir NginxCompose
+cd NginxCompose
+```
+
+### 2. Create HTML file
+
+```powershell
+notepad index.html
+```
+
+Paste:
+
+```html
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Nginx Compose</title>
+</head>
+<body>
+    <h1>Hello from Nginx Docker Compose!</h1>
+</body>
+</html>
+```
+
+Save it.
+
+### 3. Create `compose.yaml`
+
+```powershell
+notepad compose.yaml
+```
+
+Paste:
+
+services:
+  nginx:
+    image: nginx:latest
+    container_name: mynginx
+    ports:
+      - "8080:80"
+    volumes:
+      - ./index.html:/usr/share/nginx/html/index.html:ro
+    restart: always
+
+### 4. Explanation
+
+| Instruction | Meaning |
+|---|---|
+| `services` | Defines containers. |
+| `nginx` | Service name. |
+| `image` | Uses the Nginx image. |
+| `container_name` | Names the container. |
+| `ports` | Maps host port to container port. |
+| `8080:80` | Host port 8080 maps to Nginx port 80. |
+| `volumes` | Mounts a file from the host into the container. |
+| `./index.html` | HTML file in the current folder. |
+| `/usr/share/nginx/html/index.html` | Destination inside the container. |
+| `:ro` | Read-only mount. |
+| `restart: always` | Restarts the container automatically according to Docker's restart policy. |
+
+### 5. Run the application
+
+Download the image:
+
+```powershell
+docker compose pull
+```
+
+Start the container:
+
+```powershell
+docker compose up -d
+```
+
+Check containers:
+
+```powershell
+docker compose ps
+```
+
+Check logs:
+
+```powershell
+docker compose logs
+```
+
+### 6. Open browser
+
+```text
+http://localhost:8080
+```
+
+Expected output:
+
+**Hello from Nginx Docker Compose!**
+
+### 7. Stop and remove
+
+Stop:
+
+```powershell
+docker compose stop
+```
+
+Start:
+
+```powershell
+docker compose start
+```
+
+Remove:
+
+```powershell
+docker compose down
+```
+
+### 8. Viva questions
+
+1. What is Docker Compose? A tool to manage multiple containers using YAML.
+2. What is a volume? A way to share or persist data between the host and container.
+3. What does `:ro` mean? Read-only.
+4. What is the default Nginx port? 80.
+5. What is `docker compose up -d`? Creates and starts services in the background.
+6. What is the difference between `docker run` and `docker compose up`? `docker run` starts individual containers; Compose manages services defined in a YAML file.
+
+**Next: Nginx configuration file (`nginx.conf`) and its directives.**
